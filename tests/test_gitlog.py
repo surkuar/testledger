@@ -9,7 +9,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
+from typer.testing import CliRunner
 
+from testledger.cli import app
+from testledger.config import Config
 from testledger.ingest.gitlog import collect_churn, collect_fix_commits
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
@@ -60,3 +64,41 @@ def test_fix_commits_only_on_product_code(repo: Path):
 def test_non_repo_returns_empty(tmp_path: Path):
     since = datetime.now(tz=UTC) - timedelta(days=1)
     assert collect_churn(tmp_path, since) == {} and collect_fix_commits(tmp_path, since) == []
+
+
+def test_custom_fix_pattern_replaces_default(repo: Path):
+    (repo / "src/main/Calc.java").write_text("class Calc { int y; }", encoding="utf-8")
+    _git(repo, "commit", "-q", "-am", "INC-123: overflow in Calc")
+    since = datetime.now(tz=UTC) - timedelta(days=1)
+    default = [f.message for f in collect_fix_commits(repo, since)]
+    assert default == ["fix: rounding bug in Calc"]  # the default misses the ticket prefix
+    custom = [f.message for f in collect_fix_commits(repo, since, r"^INC-\d+")]
+    assert custom == ["INC-123: overflow in Calc"]  # and the custom one ignores "fix:"
+
+
+def test_fix_pattern_is_case_insensitive(repo: Path):
+    since = datetime.now(tz=UTC) - timedelta(days=1)
+    assert [f.message for f in collect_fix_commits(repo, since, "ROUNDING")] == ["fix: rounding bug in Calc"]
+
+
+def test_invalid_fix_pattern_rejected_at_load():
+    with pytest.raises(ValidationError, match="fix_commit_pattern"):
+        Config.model_validate({"sources": {"fix_commit_pattern": "(unclosed"}})
+
+
+def test_invalid_config_gives_message_not_traceback(tmp_path: Path):
+    cfg_file = tmp_path / "testledger.yml"
+    cfg_file.write_text("sources:\n  fix_commit_pattern: '(unclosed'\n", encoding="utf-8")
+    res = CliRunner().invoke(app, ["analyze", "--config", str(cfg_file), "--skip-ci", "--skip-git"])
+    assert res.exit_code == 2
+    text = " ".join(res.output.replace("│", " ").split())  # undo the error box's wrapping
+    assert "sources.fix_commit_pattern: not a valid regular expression" in text
+    assert not isinstance(res.exception, ValidationError)
+
+
+def test_init_includes_fix_pattern(tmp_path: Path):
+    res = CliRunner().invoke(app, ["init", "--path", str(tmp_path / "t.yml")])
+    assert res.exit_code == 0
+    text = (tmp_path / "t.yml").read_text(encoding="utf-8")
+    assert "fix_commit_pattern:" in text
+    assert Config.load(tmp_path / "t.yml").sources.fix_commit_pattern == Config().sources.fix_commit_pattern

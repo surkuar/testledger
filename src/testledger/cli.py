@@ -168,6 +168,20 @@ def init(
     console.print(f"Wrote {path}. Edit rates and sources, then run: testledger analyze")
 
 
+def _load_config(path: Path | None) -> Config:
+    """Load testledger.yml, turning validation errors into a message naming each bad setting."""
+    if path is None:
+        return Config()
+    try:
+        return Config.load(path)
+    except ValidationError as exc:
+        problems = "; ".join(
+            f"{'.'.join(str(p) for p in err['loc'])}: {err['msg'].removeprefix('Value error, ')}"
+            for err in exc.errors()
+        )
+        raise typer.BadParameter(f"Invalid {path}: {problems}", param_hint="--config") from exc
+
+
 @app.command()
 def analyze(
     config: Path | None = typer.Option(None, "--config", "-c", help="testledger.yml (defaults if omitted)"),
@@ -185,7 +199,7 @@ def analyze(
     ),
 ) -> None:
     """Ingest test results + git history, book the ledger, write reports."""
-    cfg = Config.load(config) if config else Config()
+    cfg = _load_config(config)
     now = datetime.now(tz=UTC)
     since = default_since(cfg.window_days)
 
@@ -202,7 +216,7 @@ def analyze(
     repo = cfg.sources.git_repo
     if repo and not skip_git:
         churn = collect_churn(repo, since)
-        fixes = collect_fix_commits(repo, since)
+        fixes = collect_fix_commits(repo, since, cfg.sources.fix_commit_pattern)
         ai_signals = scan_sources(repo, cfg.ai_generated_markers)
         if mutation_report:
             attach_mutation_scores(ai_signals, load_mutation_report(mutation_report))

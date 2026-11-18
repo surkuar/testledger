@@ -6,11 +6,14 @@ conservative industry figures; the memo prints them so finance can challenge the
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+DEFAULT_FIX_COMMIT_PATTERN = r"\b(fix|fixes|fixed|bug|hotfix|regression|defect|patch)\b"
 
 
 class Rates(BaseModel):
@@ -69,6 +72,10 @@ class Sources(BaseModel):
     git_repo: str | None = Field(
         default=".", description="Path to the repo for churn analysis; null disables"
     )
+    fix_commit_pattern: str = Field(
+        default=DEFAULT_FIX_COMMIT_PATTERN,
+        description="Regex (case-insensitive) a commit subject must match to count as a bug fix",
+    )
     github: dict[str, Any] | None = Field(
         default=None,
         description="{'repo': 'owner/name', 'workflow': 'ci.yml', 'token_env': 'GITHUB_TOKEN', 'max_runs': 200}",
@@ -77,6 +84,15 @@ class Sources(BaseModel):
         default=None,
         description="{'url': 'https://ci.acme.com', 'job': 'acme-main', 'user_env': 'JENKINS_USER', 'token_env': 'JENKINS_TOKEN', 'max_builds': 100}",
     )
+
+    @field_validator("fix_commit_pattern")
+    @classmethod
+    def _valid_regex(cls, v: str) -> str:
+        try:
+            re.compile(v, re.IGNORECASE)
+        except re.error as exc:
+            raise ValueError(f"not a valid regular expression ({exc})") from exc
+        return v
 
 
 class Config(BaseModel):

@@ -16,9 +16,9 @@ import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from testledger.config import DEFAULT_FIX_COMMIT_PATTERN
 from testledger.models import ChurnRecord, FixCommit
 
-FIX_PATTERN = re.compile(r"\b(fix|fixes|fixed|bug|hotfix|regression|defect|patch)\b", re.IGNORECASE)
 TEST_PATH_PATTERN = re.compile(
     r"(^|/)(test|tests|spec|specs|features|e2e|__tests__)(/|$)|_test\.|Test\.|\.spec\.|\.feature$",
     re.IGNORECASE,
@@ -84,8 +84,11 @@ def collect_churn(repo: str | Path, since: datetime) -> dict[str, ChurnRecord]:
     return records
 
 
-def collect_fix_commits(repo: str | Path, since: datetime) -> list[FixCommit]:
-    """Product-code commits whose message indicates a bug fix."""
+def collect_fix_commits(
+    repo: str | Path, since: datetime, pattern: str = DEFAULT_FIX_COMMIT_PATTERN
+) -> list[FixCommit]:
+    """Product-code commits whose subject matches ``pattern`` (case-insensitive)."""
+    fix_re = re.compile(pattern, re.IGNORECASE)
     repo = Path(repo)
     if not git_available() or not (repo / ".git").exists():
         return []
@@ -103,7 +106,7 @@ def collect_fix_commits(repo: str | Path, since: datetime) -> list[FixCommit]:
             _, sha, ts, subject = line.split("\t", 3)
             current = (
                 FixCommit(sha=sha, timestamp=datetime.fromisoformat(ts), message=subject)
-                if FIX_PATTERN.search(subject)
+                if fix_re.search(subject)
                 else None
             )
             if current:

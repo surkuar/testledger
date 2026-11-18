@@ -68,7 +68,7 @@ AI assistants generate tests quickly, and those tests often pass because their a
 
 ## 9. Known biases and how to correct them
 
-* **Under-counting value** when fixes are not labelled as fixes → adopt conventional commits or widen `FIX_PATTERN`.
+* **Under-counting value** when fixes are not labelled as fixes → adopt conventional commits or set `sources.fix_commit_pattern` (e.g. `^INC-\d+` for incident-ticket prefixes).
 * **Over-counting value** when a fix commit coincides with an unrelated genuine failure → the fix window (`thresholds.fix_window_days`) and one-fix-per-test rule limit this; use `ledger.json` to audit.
 * **Shared files** spread maintenance cost evenly across the tests in them → split files by behaviour if you want precision.
 * **No history** (shallow clone) → churn and fixes are empty; use `fetch-depth: 0`.

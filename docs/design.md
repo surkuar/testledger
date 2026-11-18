@@ -217,7 +217,7 @@ Design choices:
 * **Only attempt-1 failures count.** A failure that only shows on a rerun is noise.
 * **A fix commit can be consumed once per test** so a single fix does not credit the same test repeatedly, but *can* credit several tests that all failed on it (they all provided signal).
 * **Fix window** is `thresholds.fix_window_days` in `testledger.yml` (default 3 days, the typical fix lead time on a red main branch). Raise it for weekly release trains, lower it if fixes land within hours. It is printed in the memo's assumptions.
-* **Fix-pattern** = `fix|fixes|fixed|bug|hotfix|regression|defect|patch` in the commit subject. Conventional-commit `fix:` prefixes match naturally.
+* **Fix pattern** is `sources.fix_commit_pattern` in `testledger.yml`, a case-insensitive regex matched against the commit subject. The default is `\b(fix|fixes|fixed|bug|hotfix|regression|defect|patch)\b`, so conventional-commit `fix:` prefixes match naturally. Teams using incident-ticket prefixes can set e.g. `^INC-\d+`. An invalid regex is rejected when the config loads.
 
 ### 6.3 Booking entries
 
@@ -351,7 +351,7 @@ sequenceDiagram
 
 ## 14. Limitations (honest list)
 
-* Value is credited only when a fix commit is detectable; teams that squash-merge without "fix" wording will under-count value — tune `FIX_PATTERN` or use conventional commits.
+* Value is credited only when a fix commit is detectable; teams that squash-merge without "fix" wording will under-count value — set `sources.fix_commit_pattern` or use conventional commits.
 * Maintenance churn is apportioned evenly across tests in a file.
 * Mutation-score join is by file-stem convention (`FooTest` ↔ `Foo`); unusual layouts need a manual `{file: score}` JSON.
 * The model is comparative: use it to rank and reallocate, not to invoice.
