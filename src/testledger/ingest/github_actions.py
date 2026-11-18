@@ -46,9 +46,14 @@ class GitHubActionsClient:
         runs: list[dict] = []
         page = 1
         while len(runs) < max_runs:
+            params: dict[str, str | int] = {
+                "per_page": 100,
+                "page": page,
+                "created": f">={since.date().isoformat()}",
+            }
             resp = self.session.get(
                 url,
-                params={"per_page": 100, "page": page, "created": f">={since.date().isoformat()}"},
+                params=params,
                 timeout=30,
             )
             resp.raise_for_status()

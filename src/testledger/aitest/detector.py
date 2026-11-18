@@ -127,8 +127,8 @@ def load_mutation_report(path: str | Path) -> dict[str, float]:
             muts = info.get("mutants", [])
             if not muts:
                 continue
-            killed = sum(1 for m in muts if m.get("status") in ("Killed", "Timeout"))
-            out[file] = round(killed / len(muts), 3)
+            n_killed = sum(1 for m in muts if m.get("status") in ("Killed", "Timeout"))
+            out[file] = round(n_killed / len(muts), 3)
         return out
     if isinstance(data, dict) and all(isinstance(v, (int, float)) for v in data.values()):
         return {k: float(v) for k, v in data.items()}  # simple {file: score}

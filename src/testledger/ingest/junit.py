@@ -91,9 +91,8 @@ def parse_junit_xml(
 
     ts = started_at
     if ts is None:
-        raw = root.get("timestamp") or (
-            root.find("testsuite").get("timestamp") if root.find("testsuite") is not None else None
-        )
+        first_suite = root.find("testsuite")
+        raw = root.get("timestamp") or (first_suite.get("timestamp") if first_suite is not None else None)
         try:
             ts = datetime.fromisoformat(raw) if raw else None
         except ValueError:

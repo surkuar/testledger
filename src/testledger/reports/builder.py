@@ -14,6 +14,7 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -135,7 +136,7 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
         "ai_generated_tests": sum(1 for a in accounts if a.ai_generated),
         "ai_unverified_liabilities": len(ai_liabilities),
     }
-    balance_sheet = {
+    balance_sheet: dict[str, Any] = {
         "assets": [_acc_row(a) for a in assets[:50]],
         "liabilities": [_acc_row(a) for a in liabilities[:50]],
         "by_layer": dict(by_layer),
