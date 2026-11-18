@@ -74,3 +74,4 @@ jobs:
           test -s reports/memo.md
           test -s reports/memo.html
           test -s reports/ledger.json
+          test -s reports/summary.json
