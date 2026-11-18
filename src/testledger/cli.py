@@ -11,6 +11,7 @@ from __future__ import annotations
 import glob
 import json
 import re
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -125,11 +126,24 @@ def _load_ci_runs(cfg: Config, since: datetime) -> list[TestRun]:
     return runs
 
 
+def _replace_unencodable_output() -> None:
+    """Print '?' for characters the console can't encode instead of crashing.
+
+    The memo contains characters such as '≈' that legacy encodings (e.g. cp1252 on a
+    Windows console or redirected stdout) can't represent. Files are still written as UTF-8.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(errors="replace")
+
+
 @app.callback()
 def _root(
     ctx: typer.Context,
     version: bool = typer.Option(False, "--version", "-V", help="Show version and exit"),
 ) -> None:
+    _replace_unencodable_output()
     if version:
         console.print(f"testledger {__version__}")
         raise typer.Exit()

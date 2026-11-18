@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -103,3 +106,21 @@ def test_cli_end_to_end(tmp_path: Path, fixtures: Path):
     assert res.exit_code == 0 and "TestLedger" in res.output
     res = runner.invoke(app, ["init", "--path", str(tmp_path / "new.yml")])
     assert res.exit_code == 0 and (tmp_path / "new.yml").exists()
+
+
+def test_memo_survives_non_utf8_console(tmp_path: Path, cfg: Config):
+    """Regression: `memo` crashed with UnicodeEncodeError on '≈' when stdout was cp1252 (Windows)."""
+    bundle = build_reports(_ledger(cfg), cfg)
+    assert "≈" in bundle.memo_markdown
+    write_reports(bundle, tmp_path)
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"}
+    proc = subprocess.run(
+        [sys.executable, "-c", "from testledger.cli import app; app()", "memo", str(tmp_path)],
+        capture_output=True,
+        env=env,
+        timeout=60,
+    )
+    stderr = proc.stderr.decode("cp1252", errors="replace")
+    assert proc.returncode == 0, stderr
+    out = proc.stdout.decode("cp1252")
+    assert "Quality Investment Memo" in out and "save ? $" in out
