@@ -58,30 +58,24 @@ class LayerRules(BaseModel):
 
 class Sources(BaseModel):
     junit_globs: list[str] = Field(
-        default_factory=lambda: ["**/surefire-reports/*.xml", "**/junit*.xml", "**/TEST-*.xml"]
+        default_factory=lambda: ["**/surefire-reports/*.xml", "**/junit*.xml", "**/TEST-*.xml", "**/TestResult.xml"]
     )
     cucumber_globs: list[str] = Field(default_factory=lambda: ["**/cucumber*.json"])
     git_repo: str | None = Field(
         default=".", description="Path to the repo for churn analysis; null disables"
     )
-    github: dict[str, Any] | None = Field(
-        default=None,
-        description="{'repo': 'owner/name', 'workflow': 'ci.yml', 'token_env': 'GITHUB_TOKEN', 'max_runs': 200}",
-    )
-    jenkins: dict[str, Any] | None = Field(
-        default=None,
-        description="{'url': 'https://ci.acme.com', 'job': 'acme-main', 'user_env': 'JENKINS_USER', 'token_env': 'JENKINS_TOKEN', 'max_builds': 100}",
-    )
+    github: dict[str, Any] | None = None
+    jenkins: dict[str, Any] | None = None
 
 
 class Config(BaseModel):
-    org_name: str = "Your Organisation"
-    window_days: int = 90
     rates: Rates = Field(default_factory=Rates)
     thresholds: Thresholds = Field(default_factory=Thresholds)
     layers: LayerRules = Field(default_factory=LayerRules)
     sources: Sources = Field(default_factory=Sources)
-    ai_generated_markers: list[str] = Field(
+    window_days: int = 30
+    output_dir: str = "testledger-out"
+    ai_markers: list[str] = Field(
         default_factory=lambda: [
             "@ai-generated",
             "Generated-By:",
@@ -92,7 +86,7 @@ class Config(BaseModel):
     )
 
     @classmethod
-    def load(cls, path: str | Path | None) -> Config:
+    def load(cls, path: str | Path | None) -> "Config":
         if path is None:
             return cls()
         p = Path(path)

@@ -39,3 +39,20 @@ def test_parse_cucumber_json(fixtures):
     assert len(checkout) == 2 and all("@ui" in r.tags for r in checkout)
     assert all(r.file == "features/checkout.feature" for r in checkout)
     assert all(r.duration_s > 0 for r in run.results)
+
+
+def test_parse_nunit3_xml(fixtures):
+    run = parse_junit_xml(fixtures / "nunit/nunit3.xml")
+    assert run.source == "junit"
+    assert len(run.results) == 5
+    by = {r.test_id: r for r in run.results}
+    assert "NUnit.Tests.CalculatorTests.Add_PositiveNumbers" in by
+    assert by["NUnit.Tests.CalculatorTests.Add_PositiveNumbers"].outcome == Outcome.PASSED
+    assert by["NUnit.Tests.CalculatorTests.Add_PositiveNumbers"].duration_s == 0.1
+    assert by["NUnit.Tests.CalculatorTests.Divide_ByZero"].outcome == Outcome.ERROR
+    assert "DivideByZeroException" in (by["NUnit.Tests.CalculatorTests.Divide_ByZero"].message or "")
+    assert by["NUnit.Tests.CalculatorTests.Subtract_NegativeResult"].outcome == Outcome.FAILED
+    assert by["NUnit.Tests.CalculatorTests.IgnoredTest"].outcome == Outcome.SKIPPED
+    assert by["NUnit.Tests.CalculatorTests.Add_Parameterized(1,2,3)"].outcome == Outcome.PASSED
+    # timestamp from start-time
+    assert run.started_at.year == 2026 and run.started_at.month == 9

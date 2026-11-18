@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="0" name="NUnit.Tests.dll" fullname="NUnit.Tests.dll" testcasecount="5" result="Failed" start-time="2026-09-15T10:30:00Z" end-time="2026-09-15T10:30:05Z" duration="5.123" total="5" passed="2" failed="1" warnings="0" inconclusive="0" skipped="2">
+  <test-suite type="Assembly" id="1" name="NUnit.Tests.dll" fullname="NUnit.Tests.dll" result="Failed">
+    <test-suite type="TestFixture" id="2" name="CalculatorTests" fullname="NUnit.Tests.CalculatorTests" classname="NUnit.Tests.CalculatorTests" result="Failed">
+      <test-case id="3" name="Add_PositiveNumbers" fullname="NUnit.Tests.CalculatorTests.Add_PositiveNumbers" methodname="Add_PositiveNumbers" classname="NUnit.Tests.CalculatorTests" result="Passed" start-time="2026-09-15T10:30:00.100Z" end-time="2026-09-15T10:30:00.200Z" duration="0.100" asserts="1" />
+      <test-case id="4" name="Divide_ByZero" fullname="NUnit.Tests.CalculatorTests.Divide_ByZero" methodname="Divide_ByZero" classname="NUnit.Tests.CalculatorTests" result="Failed" label="Error" start-time="2026-09-15T10:30:00.300Z" end-time="2026-09-15T10:30:00.500Z" duration="0.200" asserts="0">
+        <failure>
+          <message><![CDATA[System.DivideByZeroException: Attempted to divide by zero.]]></message>
+          <stack-trace><![CDATA[at NUnit.Tests.CalculatorTests.Divide_ByZero()]]></stack-trace>
+        </failure>
+      </test-case>
+      <test-case id="5" name="Subtract_NegativeResult" fullname="NUnit.Tests.CalculatorTests.Subtract_NegativeResult" methodname="Subtract_NegativeResult" classname="NUnit.Tests.CalculatorTests" result="Failed" start-time="2026-09-15T10:30:00.600Z" end-time="2026-09-15T10:30:00.900Z" duration="0.300" asserts="1">
+        <failure>
+          <message><![CDATA[Expected: 5 But was: -5]]></message>
+          <stack-trace><![CDATA[at NUnit.Tests.CalculatorTests.Subtract_NegativeResult()]]></stack-trace>
+        </failure>
+      </test-case>
+      <test-case id="6" name="IgnoredTest" fullname="NUnit.Tests.CalculatorTests.IgnoredTest" methodname="IgnoredTest" classname="NUnit.Tests.CalculatorTests" result="Skipped" label="Ignored" start-time="2026-09-15T10:30:01.000Z" end-time="2026-09-15T10:30:01.000Z" duration="0.000" asserts="0">
+        <reason>
+          <message><![CDATA[Not implemented yet]]></message>
+        </reason>
+      </test-case>
+      <test-case id="7" name="Add_Parameterized" fullname="NUnit.Tests.CalculatorTests.Add_Parameterized(1,2,3)" methodname="Add_Parameterized" classname="NUnit.Tests.CalculatorTests" result="Passed" start-time="2026-09-15T10:30:01.100Z" end-time="2026-09-15T10:30:01.150Z" duration="0.050" asserts="1" />
+    </test-suite>
+  </test-suite>
+</test-run>
