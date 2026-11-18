@@ -75,11 +75,25 @@ class Config(BaseModel):
     sources: Sources = Field(default_factory=Sources)
     window_days: int = 30
     output_dir: str = "testledger-out"
+    ai_markers: list[str] = Field(
+        default_factory=lambda: [
+            "@ai-generated",
+            "Generated-By:",
+            "Co-Authored-By: Copilot",
+            "Co-Authored-By: Claude",
+        ],
+        description="Strings in test source or commit messages that mark a test as AI-generated",
+    )
 
     @classmethod
-    def load(cls, path: str | Path = "testledger.yml") -> "Config":
+    def load(cls, path: str | Path | None) -> "Config":
+        if path is None:
+            return cls()
         p = Path(path)
         if not p.exists():
             raise FileNotFoundError(f"Config not found: {p}")
-        data = yaml.safe_load(p.read_text()) or {}
-        return cls(**data)
+        data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        return cls.model_validate(data)
+
+    def dump_example(self) -> str:
+        return yaml.safe_dump(self.model_dump(mode="json"), sort_keys=False)
