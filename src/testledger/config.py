@@ -14,6 +14,16 @@ import yaml
 from pydantic import BaseModel, Field, field_validator
 
 DEFAULT_FIX_COMMIT_PATTERN = r"\b(fix|fixes|fixed|bug|hotfix|regression|defect|patch)\b"
+DEFAULT_TEST_PATH_PATTERNS = [
+    r"(^|/)(test|tests|spec|specs|features|e2e|__tests__)(/|$)|_test\.|Test\.|\.spec\.|\.feature$"
+]
+
+
+def _check_regex(pattern: str) -> None:
+    try:
+        re.compile(pattern, re.IGNORECASE)
+    except re.error as exc:
+        raise ValueError(f"{pattern!r} is not a valid regular expression ({exc})") from exc
 
 
 class Rates(BaseModel):
@@ -76,6 +86,11 @@ class Sources(BaseModel):
         default=DEFAULT_FIX_COMMIT_PATTERN,
         description="Regex (case-insensitive) a commit subject must match to count as a bug fix",
     )
+    test_path_patterns: list[str] = Field(
+        default_factory=lambda: list(DEFAULT_TEST_PATH_PATTERNS),
+        description="Regexes (case-insensitive, '/' separators) identifying test files; a path matching "
+        "any one is a test. Drives maintenance churn and which files fix commits ignore",
+    )
     github: dict[str, Any] | None = Field(
         default=None,
         description="{'repo': 'owner/name', 'workflow': 'ci.yml', 'token_env': 'GITHUB_TOKEN', 'max_runs': 200}",
@@ -88,10 +103,16 @@ class Sources(BaseModel):
     @field_validator("fix_commit_pattern")
     @classmethod
     def _valid_regex(cls, v: str) -> str:
-        try:
-            re.compile(v, re.IGNORECASE)
-        except re.error as exc:
-            raise ValueError(f"not a valid regular expression ({exc})") from exc
+        _check_regex(v)
+        return v
+
+    @field_validator("test_path_patterns")
+    @classmethod
+    def _valid_regex_list(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("needs at least one pattern")
+        for pattern in v:
+            _check_regex(pattern)
         return v
 
 

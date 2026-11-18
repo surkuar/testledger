@@ -13,11 +13,20 @@ TestLedger books every test as an account over a rolling window (default 90 days
 | **CI compute** | Every execution burns runner minutes | duration in the result file × your per-minute rate |
 | **Rerun compute** | A red build is re-run; the whole job pays again | executions on attempt > 1 |
 | **Triage time** | The largest hidden cost. An engineer opens the failure, reads logs, decides "probably flaky", re-runs | flaky false alarms × minutes per false alarm × fully-loaded hourly rate |
-| **Maintenance** | Brittle tests are edited every time the product moves | lines *modified* in existing test files in the window (git; creating a new test is authoring, not maintenance), × minutes per line × hourly rate |
+| **Maintenance** | Brittle tests are edited every time the product moves | lines *modified* in existing test files in the window (git; creating a new test is authoring, not maintenance), × minutes per line × hourly rate. Test files are those matching `sources.test_path_patterns` |
 
 Industrial studies put flake rates at 4–16 % of tests and show that teams shift effort from investigation to blind reruns precisely because triage is expensive; TestLedger makes that cost visible per test.
 
 Defaults (override in `testledger.yml`): engineer $75/h fully loaded, CI $0.008/min, 18 minutes per false alarm, 1.5 minutes per changed line.
+
+### Which files are tests
+
+`sources.test_path_patterns` (a list of case-insensitive regexes; a path matching any one is a test, matched with `/` separators on every OS) decides this, and it matters **twice**:
+
+* **Maintenance cost:** only edits to matching files are booked as test churn.
+* **Regression credit:** matching files are left out of fix commits, so a commit that only edits tests is not product code.
+
+The default covers common layouts (`test/`, `tests/`, `spec/`, `e2e/`, `__tests__/`, `features/`, `*_test.*`, `*Test.*`, `*.spec.*`, `*.feature`). If your tests live elsewhere, e.g. `src/integrationTest/`, add a pattern such as `(^|/)integrationTest/`. Setting the list replaces the default, so include it if you still need it.
 
 ## 3. Credits — the return
 

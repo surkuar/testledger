@@ -215,8 +215,9 @@ def analyze(
     churn, fixes, ai_signals = {}, [], {}
     repo = cfg.sources.git_repo
     if repo and not skip_git:
-        churn = collect_churn(repo, since)
-        fixes = collect_fix_commits(repo, since, cfg.sources.fix_commit_pattern)
+        src = cfg.sources
+        churn = collect_churn(repo, since, src.test_path_patterns)
+        fixes = collect_fix_commits(repo, since, src.fix_commit_pattern, src.test_path_patterns)
         ai_signals = scan_sources(repo, cfg.ai_generated_markers)
         if mutation_report:
             attach_mutation_scores(ai_signals, load_mutation_report(mutation_report))

@@ -171,7 +171,7 @@ flowchart TD
   CI -- yes --> API[Fetch run history + reports via API]
   CI -- no --> SKIP1[skip]
   CFG --> GITQ{git_repo set and<br/>git available?}
-  GITQ -- yes --> CHURN[git log --numstat on test paths<br/>→ ChurnRecord per file]
+  GITQ -- yes --> CHURN[git log --numstat on test paths<br/>sources.test_path_patterns<br/>→ ChurnRecord per file]
   GITQ -- yes --> FIX[git log on product paths<br/>subject matches fix pattern<br/>→ FixCommit list]
   GITQ -- yes --> SCAN[Scan test sources:<br/>AI markers + assertion density]
   SCAN --> MUTJ{--mutation given?}

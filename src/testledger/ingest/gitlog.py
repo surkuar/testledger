@@ -13,16 +13,18 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from testledger.config import DEFAULT_FIX_COMMIT_PATTERN
+from testledger.config import DEFAULT_FIX_COMMIT_PATTERN, DEFAULT_TEST_PATH_PATTERNS
 from testledger.models import ChurnRecord, FixCommit
 
-TEST_PATH_PATTERN = re.compile(
-    r"(^|/)(test|tests|spec|specs|features|e2e|__tests__)(/|$)|_test\.|Test\.|\.spec\.|\.feature$",
-    re.IGNORECASE,
-)
+
+def is_test_path(path: str, patterns: Sequence[str] = DEFAULT_TEST_PATH_PATTERNS) -> bool:
+    """True if ``path`` matches any pattern. Backslashes are normalised to '/' first."""
+    normalised = path.replace("\\", "/")
+    return any(re.search(p, normalised, re.IGNORECASE) for p in patterns)
 
 
 def git_available() -> bool:
@@ -43,8 +45,10 @@ def _git(repo: Path, *args: str) -> str:
     return out.stdout
 
 
-def collect_churn(repo: str | Path, since: datetime) -> dict[str, ChurnRecord]:
-    """Per-file churn for test files touched since ``since``."""
+def collect_churn(
+    repo: str | Path, since: datetime, test_patterns: Sequence[str] = DEFAULT_TEST_PATH_PATTERNS
+) -> dict[str, ChurnRecord]:
+    """Per-file churn for test files (paths matching ``test_patterns``) touched since ``since``."""
     repo = Path(repo)
     if not git_available() or not (repo / ".git").exists():
         return {}
@@ -69,7 +73,7 @@ def collect_churn(repo: str | Path, since: datetime) -> dict[str, ChurnRecord]:
         if len(parts) != 3:
             continue
         added, deleted, path = parts
-        if not TEST_PATH_PATTERN.search(path):
+        if not is_test_path(path, test_patterns):
             continue
         rec = records.setdefault(path, ChurnRecord(file=path))
         rec.commits += 1
@@ -85,9 +89,12 @@ def collect_churn(repo: str | Path, since: datetime) -> dict[str, ChurnRecord]:
 
 
 def collect_fix_commits(
-    repo: str | Path, since: datetime, pattern: str = DEFAULT_FIX_COMMIT_PATTERN
+    repo: str | Path,
+    since: datetime,
+    pattern: str = DEFAULT_FIX_COMMIT_PATTERN,
+    test_patterns: Sequence[str] = DEFAULT_TEST_PATH_PATTERNS,
 ) -> list[FixCommit]:
-    """Product-code commits whose subject matches ``pattern`` (case-insensitive)."""
+    """Commits whose subject matches ``pattern`` (case-insensitive), with test files left out."""
     fix_re = re.compile(pattern, re.IGNORECASE)
     repo = Path(repo)
     if not git_available() or not (repo / ".git").exists():
@@ -112,7 +119,7 @@ def collect_fix_commits(
             if current:
                 fixes.append(current)
             continue
-        if current and line.strip() and not TEST_PATH_PATTERN.search(line):
+        if current and line.strip() and not is_test_path(line.strip(), test_patterns):
             current.files.append(line.strip())
     return fixes
 

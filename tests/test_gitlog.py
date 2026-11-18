@@ -15,7 +15,7 @@ from typer.testing import CliRunner
 
 from testledger.cli import app
 from testledger.config import Config
-from testledger.ingest.gitlog import collect_churn, collect_fix_commits
+from testledger.ingest.gitlog import collect_churn, collect_fix_commits, is_test_path
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git not installed")
 
@@ -94,7 +94,7 @@ def test_invalid_config_gives_message_not_traceback(tmp_path: Path):
     assert res.exit_code == 2
     plain = re.sub(r"\x1b\[[0-9;]*m", "", res.output)  # CI forces colour (GITHUB_ACTIONS is set)
     text = " ".join(plain.replace("\u2502", " ").split())  # undo the error box's wrapping
-    assert "sources.fix_commit_pattern: not a valid regular expression" in text
+    assert "sources.fix_commit_pattern: '(unclosed' is not a valid regular expression" in text
     assert not isinstance(res.exception, ValidationError)
 
 
@@ -104,3 +104,56 @@ def test_init_includes_fix_pattern(tmp_path: Path):
     text = (tmp_path / "t.yml").read_text(encoding="utf-8")
     assert "fix_commit_pattern:" in text
     assert Config.load(tmp_path / "t.yml").sources.fix_commit_pattern == Config().sources.fix_commit_pattern
+
+
+GO, CYPRESS, INTEG = "pkg/foo_test.go", "cypress/e2e/login.cy.ts", "src/integrationTest/java/CheckoutIT.java"
+
+
+def test_custom_test_patterns_cover_go_cypress_and_integration_layouts():
+    patterns = [r"_test\.go$", r"\.cy\.ts$", r"(^|/)integrationTest/"]
+    assert all(is_test_path(p, patterns) for p in (GO, CYPRESS, INTEG))
+    assert not is_test_path(INTEG)  # the default misses this layout
+    assert not is_test_path("pkg/foo.go", patterns)
+
+
+def test_custom_test_patterns_replace_the_default():
+    only_cypress = [r"\.cy\.ts$"]
+    assert is_test_path(CYPRESS, only_cypress)
+    assert not is_test_path(GO, only_cypress)  # the default would count this as a test
+
+
+def test_test_patterns_match_windows_paths():
+    assert is_test_path(r"src\integrationTest\java\CheckoutIT.java", [r"(^|/)integrationTest/"])
+    assert is_test_path(r"src\test\java\CalcTest.java")
+    assert not is_test_path(r"src\main\Calc.java")
+
+
+@pytest.mark.parametrize("patterns", [["(unclosed"], []])
+def test_invalid_test_patterns_rejected_at_load(patterns):
+    with pytest.raises(ValidationError, match="test_path_patterns"):
+        Config.model_validate({"sources": {"test_path_patterns": patterns}})
+
+
+def test_test_patterns_drive_churn_and_fix_commits(repo: Path):
+    it = repo / INTEG
+    it.parent.mkdir(parents=True)
+    it.write_text("class CheckoutIT {}", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "test: add checkout IT")
+    it.write_text("class CheckoutIT { int a; }", encoding="utf-8")
+    (repo / "src/main/Calc.java").write_text("class Calc { int z; }", encoding="utf-8")
+    _git(repo, "commit", "-q", "-am", "fix: checkout total")
+    since = datetime.now(tz=UTC) - timedelta(days=1)
+    patterns = [*Config().sources.test_path_patterns, r"(^|/)integrationTest/"]
+
+    assert INTEG not in collect_churn(repo, since)
+    assert INTEG in collect_churn(repo, since, patterns)  # maintenance cost
+
+    default_fix = next(f for f in collect_fix_commits(repo, since) if f.message == "fix: checkout total")
+    custom_fix = next(
+        f
+        for f in collect_fix_commits(repo, since, test_patterns=patterns)
+        if f.message == "fix: checkout total"
+    )
+    assert INTEG in default_fix.files  # wrongly treated as product code
+    assert custom_fix.files == ["src/main/Calc.java"]  # regression credit
