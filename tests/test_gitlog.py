@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from datetime import UTC, datetime, timedelta
@@ -91,7 +92,8 @@ def test_invalid_config_gives_message_not_traceback(tmp_path: Path):
     cfg_file.write_text("sources:\n  fix_commit_pattern: '(unclosed'\n", encoding="utf-8")
     res = CliRunner().invoke(app, ["analyze", "--config", str(cfg_file), "--skip-ci", "--skip-git"])
     assert res.exit_code == 2
-    text = " ".join(res.output.replace("│", " ").split())  # undo the error box's wrapping
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", res.output)  # CI forces colour (GITHUB_ACTIONS is set)
+    text = " ".join(plain.replace("\u2502", " ").split())  # undo the error box's wrapping
     assert "sources.fix_commit_pattern: not a valid regular expression" in text
     assert not isinstance(res.exception, ValidationError)
 
