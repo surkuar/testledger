@@ -98,7 +98,7 @@ flowchart LR
 
 **Debits (cost) per test:** CI minutes × rate · rerun minutes · flaky false-alarms × triage minutes × engineer rate · test-file lines changed × maintenance minutes × engineer rate.
 
-**Credits (value) per test:** a genuine first-attempt failure (not cleared by a same-SHA rerun) followed within 3 days by a product-code commit that looks like a fix, valued at your organisation's cost of a production defect.
+**Credits (value) per test:** a genuine first-attempt failure (not cleared by a same-SHA rerun) followed within 3 days (`thresholds.fix_window_days`) by a product-code commit that looks like a fix, valued at your organisation's cost of a production defect.
 
 **Verdicts:** `quarantine` (flake ≥ 30 %) · `retire` (no catches, net negative, cost above floor) · `demote` (UI test whose cost-per-catch is ≥ 3× the service-layer median) · `fix` (valuable but flaky or slow) · `asset` · `hold`.
 

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import pytest
 from conftest import NOW, make_run
+from pydantic import ValidationError
 
 from testledger.config import Config
 from testledger.ledger import build_ledger
@@ -48,6 +50,28 @@ def test_fix_commit_outside_window_is_not_credited(cfg):
     fixes = [FixCommit(sha="f1", timestamp=NOW - timedelta(days=10), message="fix: unrelated")]
     ledger = build_ledger(runs, cfg, fixes=fixes, now=NOW)
     assert ledger.accounts[UNIT].regressions_caught == 0
+
+
+def _fix_five_days_after_failure():
+    runs = [make_run("r1", "sha1", 1, 20, {UNIT: F})] + [
+        make_run(f"r{i}", f"sha{i}", 1, i, {UNIT: P}) for i in range(2, 8)
+    ]
+    return runs, [FixCommit(sha="f1", timestamp=NOW - timedelta(days=15), message="fix: calc")]
+
+
+def test_fix_window_is_configurable():
+    runs, fixes = _fix_five_days_after_failure()
+    default = build_ledger(runs, Config(window_days=90), fixes=fixes, now=NOW)
+    assert default.accounts[UNIT].regressions_caught == 0
+    week = Config.model_validate({"window_days": 90, "thresholds": {"fix_window_days": 7}})
+    ledger = build_ledger(runs, week, fixes=fixes, now=NOW)
+    assert ledger.accounts[UNIT].regressions_caught == 1
+
+
+@pytest.mark.parametrize("days", [0, -1])
+def test_fix_window_must_be_positive(days):
+    with pytest.raises(ValidationError, match="fix_window_days"):
+        Config.model_validate({"thresholds": {"fix_window_days": days}})
 
 
 def test_flaky_failure_is_not_credited_even_with_nearby_fix(cfg):

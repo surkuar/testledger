@@ -44,6 +44,11 @@ class Thresholds(BaseModel):
     demote_layer_cost_ratio: float = 3.0
     ai_min_mutation_score: float = 0.5
     ai_min_assertion_density: float = 0.8
+    fix_window_days: float = Field(
+        default=3.0,
+        gt=0,
+        description="A genuine failure earns regression credit only if a fix commit lands within this many days",
+    )
 
 
 class LayerRules(BaseModel):

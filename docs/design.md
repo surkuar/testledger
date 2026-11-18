@@ -208,7 +208,7 @@ flowchart LR
   A[Failure on attempt 1] --> B{sha,test in<br/>flaky pairs?}
   B -- yes --> X[Discard: false alarm]
   B -- no --> C[Genuine failure at time t]
-  C --> D{Fix commit on product code<br/>with t ≤ t_fix ≤ t + 3 days?}
+  C --> D{Fix commit on product code<br/>with t ≤ t_fix ≤ t + fix_window_days?}
   D -- no --> Y[No credit]
   D -- yes --> E[regressions_caught += 1<br/>credit regression_value_usd<br/>consume that fix commit for this test]
 ```
@@ -216,7 +216,7 @@ flowchart LR
 Design choices:
 * **Only attempt-1 failures count.** A failure that only shows on a rerun is noise.
 * **A fix commit can be consumed once per test** so a single fix does not credit the same test repeatedly, but *can* credit several tests that all failed on it (they all provided signal).
-* **3-day window** is a constant in `engine.py` (`FIX_WINDOW`); it reflects typical fix lead time on a red main branch. Promote to config if your cadence differs.
+* **Fix window** is `thresholds.fix_window_days` in `testledger.yml` (default 3 days, the typical fix lead time on a red main branch). Raise it for weekly release trains, lower it if fixes land within hours. It is printed in the memo's assumptions.
 * **Fix-pattern** = `fix|fixes|fixed|bug|hotfix|regression|defect|patch` in the commit subject. Conventional-commit `fix:` prefixes match naturally.
 
 ### 6.3 Booking entries

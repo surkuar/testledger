@@ -24,7 +24,7 @@ Defaults (override in `testledger.yml`): engineer $75/h fully loaded, CI $0.008/
 A test earns its keep when it **fails on a real defect before production**. TestLedger infers this from two independent signals:
 
 1. the test failed on the **first attempt** of a commit and the failure was **not** cleared by re-running the same commit (so it is not a flake), and
-2. within **3 days** a **product-code** commit landed whose subject reads like a fix.
+2. within **`thresholds.fix_window_days`** (default **3 days**) a **product-code** commit landed whose subject reads like a fix.
 
 Each such event is worth `regression_value_usd` — your organisation's cost of an escaped defect (debug time, hotfix, customer impact, incident). The default $2,000 is deliberately conservative; many organisations use $5–50k for customer-facing systems.
 
@@ -69,7 +69,7 @@ AI assistants generate tests quickly, and those tests often pass because their a
 ## 9. Known biases and how to correct them
 
 * **Under-counting value** when fixes are not labelled as fixes → adopt conventional commits or widen `FIX_PATTERN`.
-* **Over-counting value** when a fix commit coincides with an unrelated genuine failure → the 3-day window and one-fix-per-test rule limit this; use `ledger.json` to audit.
+* **Over-counting value** when a fix commit coincides with an unrelated genuine failure → the fix window (`thresholds.fix_window_days`) and one-fix-per-test rule limit this; use `ledger.json` to audit.
 * **Shared files** spread maintenance cost evenly across the tests in them → split files by behaviour if you want precision.
 * **No history** (shallow clone) → churn and fixes are empty; use `fetch-depth: 0`.
 

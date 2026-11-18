@@ -12,7 +12,7 @@ Value model (credits)
 ---------------------
 * **Regression caught** = a genuine failure (failed on first attempt, and was
   NOT subsequently passed on a rerun of the same SHA) that was followed within
-  ``FIX_WINDOW`` by a product-code commit matching the fix pattern.
+  ``thresholds.fix_window_days`` by a product-code commit matching the fix pattern.
   Each such event is worth ``regression_value_usd``.
 * **Risk coverage**     = optional flat value per stable test (default 0) for
   organisations that want to recognise a "safety net" value.
@@ -55,8 +55,6 @@ from testledger.models import (
     TestRun,
     Verdict,
 )
-
-FIX_WINDOW = timedelta(days=3)
 
 
 def classify_layer(test_id: str, file: str | None, cfg: Config) -> Layer:
@@ -123,8 +121,10 @@ def _flaky_pairs(runs: list[TestRun]) -> set[tuple[str, str]]:
     return pairs
 
 
-def _credit_regressions(failures: dict[str, list[datetime]], fixes: list[FixCommit]) -> dict[str, int]:
-    """A genuine failure followed by a fix commit within FIX_WINDOW counts once per fix."""
+def _credit_regressions(
+    failures: dict[str, list[datetime]], fixes: list[FixCommit], window: timedelta
+) -> dict[str, int]:
+    """A genuine failure followed by a fix commit within ``window`` counts once per fix."""
     credited: dict[str, int] = defaultdict(int)
     fix_times = sorted(f.timestamp.astimezone(UTC) for f in fixes)
     for test_id, times in failures.items():
@@ -134,7 +134,7 @@ def _credit_regressions(failures: dict[str, list[datetime]], fixes: list[FixComm
             for ft in fix_times:
                 if ft in used:
                     continue
-                if t <= ft <= t + FIX_WINDOW:
+                if t <= ft <= t + window:
                     credited[test_id] += 1
                     used.add(ft)
                     break
@@ -189,7 +189,7 @@ def build_ledger(
     flakes = _detect_flakes(runs)
     flaky_pairs = _flaky_pairs(runs)
     genuine = _genuine_failures(runs, flaky_pairs)
-    credited = _credit_regressions(genuine, fixes)
+    credited = _credit_regressions(genuine, fixes, timedelta(days=cfg.thresholds.fix_window_days))
 
     for test_id, acc in accounts.items():
         d = durations.get(test_id, [])

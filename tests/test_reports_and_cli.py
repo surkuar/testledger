@@ -41,6 +41,9 @@ def test_reports_render_and_write(tmp_path: Path, cfg: Config):
     assert bundle.summary["regressions_caught"] == 1
     assert bundle.summary["ai_unverified_liabilities"] == 1
     assert "Quality Investment Memo" in bundle.memo_markdown and "<html" in bundle.memo_html
+    assert "regression fix window: 3.0 days" in bundle.memo_markdown
+    assert "within 3.0 days by a product fix commit" in bundle.memo_markdown
+    assert "regression fix window (days)" in bundle.memo_html
     assert bundle.income_statement["net_usd"] == bundle.summary["net_usd"]
     written = write_reports(bundle, tmp_path)
     assert {

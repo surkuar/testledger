@@ -71,8 +71,9 @@
 {% for k, v in assumptions.items() if k != 'thresholds' -%}
 - {{ k.replace('_', ' ') }}: {{ v }}
 {% endfor %}
+- regression fix window: {{ assumptions.thresholds.fix_window_days }} days
 {% for n in notes -%}
 - {{ n }}
 {% endfor %}
 
-*Method: every test is booked like an account. Debits are CI minutes, rerun minutes, engineer triage time on flaky failures and maintenance churn from git history. Credits are genuine first-attempt failures followed within 3 days by a product fix commit, valued at the organisation's cost of a production defect. Full method: docs/methodology.md.*
+*Method: every test is booked like an account. Debits are CI minutes, rerun minutes, engineer triage time on flaky failures and maintenance churn from git history. Credits are genuine first-attempt failures followed within {{ assumptions.thresholds.fix_window_days }} days by a product fix commit, valued at the organisation's cost of a production defect. Full method: docs/methodology.md.*
