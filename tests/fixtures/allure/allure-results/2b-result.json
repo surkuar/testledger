@@ -1,0 +1,15 @@
+{
+  "uuid": "2b",
+  "historyId": "h-login",
+  "fullName": "com.acme.ui.LoginTest.locked_account",
+  "name": "locked_account",
+  "status": "passed",
+  "start": 1790000009000,
+  "stop": 1790000011000,
+  "labels": [
+    {
+      "name": "testClass",
+      "value": "com.acme.ui.LoginTest"
+    }
+  ]
+}

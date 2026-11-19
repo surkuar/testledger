@@ -33,6 +33,7 @@ flowchart TB
   subgraph Sources["Data the organisation already has"]
     J[JUnit / TestNG XML]
     C[Cucumber JSON]
+    AL[Allure results]
     GH[GitHub Actions API]
     JK[Jenkins API]
     GIT[(git history)]
@@ -54,7 +55,7 @@ flowchart TB
     LJ[ledger.json]
     PR[PR comment / job summary]
   end
-  J & C & GH & JK --> ING
+  J & C & AL & GH & JK --> ING
   GIT --> ING
   SRC & MUT --> AI
   ING --> ENG
@@ -74,6 +75,7 @@ src/testledger/
 ├── ingest/
 │   ├── junit.py           JUnit / Surefire / TestNG XML → TestRun
 │   ├── cucumber.py        Cucumber JSON → TestRun
+│   ├── allure.py          allure-results/ folder → TestRun (+ one per retry round)
 │   ├── gitlog.py          git log → churn per test file, fix commits on product code
 │   ├── github_actions.py  REST client: runs → artifacts → zip → TestRun (with run_attempt)
 │   └── jenkins.py         JSON API: builds → testReport → TestRun (same SHA = rerun)
@@ -163,7 +165,7 @@ classDiagram
 ```mermaid
 flowchart TD
   S([testledger analyze]) --> CFG[Load testledger.yml<br/>defaults if absent]
-  CFG --> LOC[Glob local JUnit / Cucumber reports]
+  CFG --> LOC[Glob local JUnit / Cucumber reports<br/>and Allure results folders]
   LOC --> META{Folder name has<br/>date + sha + attempt?}
   META -- yes --> RUN1[TestRun with sha / attempt / date]
   META -- no --> RUN2[TestRun with mtime, no rerun detection]

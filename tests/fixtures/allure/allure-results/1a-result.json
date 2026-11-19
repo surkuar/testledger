@@ -1,0 +1,23 @@
+{
+  "uuid": "1a",
+  "historyId": "h-cart",
+  "fullName": "com.acme.api.CartApiTest.adds_item",
+  "name": "adds_item",
+  "status": "passed",
+  "start": 1790000001000,
+  "stop": 1790000001250,
+  "labels": [
+    {
+      "name": "testClass",
+      "value": "com.acme.api.CartApiTest"
+    },
+    {
+      "name": "package",
+      "value": "com.acme.api"
+    },
+    {
+      "name": "tag",
+      "value": "smoke"
+    }
+  ]
+}

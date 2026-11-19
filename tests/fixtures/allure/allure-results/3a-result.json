@@ -1,0 +1,18 @@
+{
+  "uuid": "3a",
+  "historyId": "h-pay",
+  "fullName": "tests/test_payments.py::test_refund",
+  "name": "test_refund",
+  "status": "broken",
+  "start": 1790000000500,
+  "stop": 1790000000800,
+  "statusDetails": {
+    "message": "ConnectionError: payments-sandbox unreachable"
+  },
+  "labels": [
+    {
+      "name": "suite",
+      "value": "test_payments"
+    }
+  ]
+}

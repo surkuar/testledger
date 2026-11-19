@@ -1,0 +1,15 @@
+{
+  "uuid": "4a",
+  "historyId": "h-tax",
+  "fullName": "com.acme.unit.TaxTest.vat_eu",
+  "name": "vat_eu",
+  "status": "skipped",
+  "start": 1790000001500,
+  "stop": 1790000001500,
+  "labels": [
+    {
+      "name": "package",
+      "value": "com.acme.unit"
+    }
+  ]
+}

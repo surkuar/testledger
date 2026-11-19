@@ -25,7 +25,13 @@ from rich.text import Text
 from testledger import __version__
 from testledger.aitest import attach_mutation_scores, load_mutation_report, scan_sources
 from testledger.config import Config
-from testledger.ingest import collect_churn, collect_fix_commits, parse_cucumber_json, parse_junit_xml
+from testledger.ingest import (
+    collect_churn,
+    collect_fix_commits,
+    parse_allure_results,
+    parse_cucumber_json,
+    parse_junit_xml,
+)
 from testledger.ingest.gitlog import default_since
 from testledger.ledger import build_ledger
 from testledger.models import TestRun
@@ -96,6 +102,21 @@ def _load_local_runs(cfg: Config, root: Path) -> list[TestRun]:
                 )
             except Exception as exc:  # noqa: BLE001
                 console.print(f"[yellow]skip {f}: {exc}[/yellow]")
+    for pattern in cfg.sources.allure_globs:
+        for d in glob.glob(str(root / pattern), recursive=True):
+            folder = Path(d)
+            if not folder.is_dir():
+                continue
+            # _meta_from_path reads the parents of its argument, so pass a path inside the folder.
+            sha, attempt, ts = _meta_from_path(folder / "_")
+            try:
+                runs.extend(
+                    parse_allure_results(
+                        folder, commit_sha=sha, attempt=attempt, started_at=ts, run_id=folder.parent.name
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001
+                console.print(f"[yellow]skip {d}: {exc}[/yellow]")
     return runs
 
 

@@ -74,6 +74,7 @@ When you use the GitHub Actions or Jenkins ingesters this metadata comes from th
 | JUnit XML (Surefire, Gradle, pytest, Jest, …) | `sources.junit_globs` | universal baseline |
 | TestNG `testng-results.xml` | `sources.junit_globs` | auto-detected |
 | Cucumber JSON (jvm / ruby / js) | `sources.cucumber_globs` | scenario = test, outline rows distinct |
+| Allure results (JUnit 5, TestNG, pytest, Playwright, …) | `sources.allure_globs` | one `allure-results/` folder = one run; retries (same `historyId`) = reruns |
 | Git history | `sources.git_repo` | maintenance churn on test files; fix-commit detection for value credit |
 | GitHub Actions | `sources.github` | run history + artifacts via REST API, `run_attempt` = rerun |
 | Jenkins | `sources.jenkins` | build history + `testReport` JSON; same SHA in consecutive builds = rerun |

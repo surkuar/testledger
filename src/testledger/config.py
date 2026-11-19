@@ -79,6 +79,10 @@ class Sources(BaseModel):
         default_factory=lambda: ["**/surefire-reports/*.xml", "**/junit*.xml", "**/TEST-*.xml"]
     )
     cucumber_globs: list[str] = Field(default_factory=lambda: ["**/cucumber*.json"])
+    allure_globs: list[str] = Field(
+        default_factory=lambda: ["**/allure-results"],
+        description="Allure results folders; one folder is one run, retries inside it become reruns",
+    )
     git_repo: str | None = Field(
         default=".", description="Path to the repo for churn analysis; null disables"
     )

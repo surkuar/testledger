@@ -1,0 +1,19 @@
+{
+  "uuid": "2a",
+  "historyId": "h-login",
+  "fullName": "com.acme.ui.LoginTest.locked_account",
+  "name": "locked_account",
+  "status": "failed",
+  "start": 1790000002000,
+  "stop": 1790000004500,
+  "statusDetails": {
+    "message": "expected 'Locked' but was 'Welcome'",
+    "trace": "AssertionError..."
+  },
+  "labels": [
+    {
+      "name": "testClass",
+      "value": "com.acme.ui.LoginTest"
+    }
+  ]
+}
