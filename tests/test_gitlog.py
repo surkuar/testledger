@@ -157,3 +157,45 @@ def test_test_patterns_drive_churn_and_fix_commits(repo: Path):
     )
     assert INTEG in default_fix.files  # wrongly treated as product code
     assert custom_fix.files == ["src/main/Calc.java"]  # regression credit
+
+
+@pytest.mark.parametrize("local_tz", ["UTC", "EST5EDT", "Asia/Kolkata"])
+def test_since_cutoff_is_the_exact_instant(tmp_path: Path, monkeypatch, local_tz):
+    # Regression: --since used to get only the UTC date, which git reads as that date at the
+    # current local time of day, moving the cutoff by up to a day (flaky in US evenings).
+    monkeypatch.setenv("TZ", local_tz)
+    since = datetime(2026, 1, 10, 12, 0, tzinfo=UTC)
+
+    def commit(message: str, when: datetime) -> None:
+        stamp = when.isoformat()
+        env = os.environ | {"GIT_AUTHOR_DATE": stamp, "GIT_COMMITTER_DATE": stamp}
+        _git_env(tmp_path, env, "commit", "-q", "-am", message)
+
+    _git(tmp_path, "init", "-q")
+    test_file = tmp_path / "src/test/java/CalcTest.java"
+    test_file.parent.mkdir(parents=True)
+    (tmp_path / "src/main").mkdir(parents=True)
+    product = tmp_path / "src/main/Calc.java"
+    test_file.write_text("a", encoding="utf-8")
+    product.write_text("a", encoding="utf-8")
+    _git(tmp_path, "add", "-A")
+    commit("feat: initial", since - timedelta(days=2))
+    test_file.write_text("b", encoding="utf-8")
+    product.write_text("b", encoding="utf-8")
+    commit("fix: before cutoff", since - timedelta(hours=1))
+    test_file.write_text("c", encoding="utf-8")
+    product.write_text("c", encoding="utf-8")
+    commit("fix: after cutoff", since + timedelta(hours=1))
+
+    assert [f.message for f in collect_fix_commits(tmp_path, since)] == ["fix: after cutoff"]
+    assert collect_churn(tmp_path, since)["src/test/java/CalcTest.java"].commits == 1
+
+
+def _git_env(repo: Path, env: dict[str, str], *args: str) -> None:
+    env = env | {
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+    }
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, env=env)

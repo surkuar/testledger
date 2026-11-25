@@ -45,6 +45,18 @@ def _git(repo: Path, *args: str) -> str:
     return out.stdout
 
 
+def _since_arg(since: datetime) -> str:
+    """``--since`` value for git: the full instant, never a bare date.
+
+    Git reads a bare ``YYYY-MM-DD`` as that date in *local* time at the *current* time of
+    day, so passing the UTC date shifts the cutoff by up to a day, and when the UTC date is
+    ahead of the local one it lands only seconds in the past.
+    """
+    if since.tzinfo is None:
+        since = since.replace(tzinfo=UTC)
+    return f"--since={since.isoformat(timespec='seconds')}"
+
+
 def collect_churn(
     repo: str | Path, since: datetime, test_patterns: Sequence[str] = DEFAULT_TEST_PATH_PATTERNS
 ) -> dict[str, ChurnRecord]:
@@ -55,7 +67,7 @@ def collect_churn(
     log = _git(
         repo,
         "log",
-        f"--since={since.date().isoformat()}",
+        _since_arg(since),
         "--numstat",
         "--diff-filter=M",  # modifications only: authoring a new test is not maintenance
         "--format=COMMIT%x09%H%x09%an%x09%aI",
@@ -102,7 +114,7 @@ def collect_fix_commits(
     log = _git(
         repo,
         "log",
-        f"--since={since.date().isoformat()}",
+        _since_arg(since),
         "--name-only",
         "--format=COMMIT%x09%H%x09%aI%x09%s",
     )
