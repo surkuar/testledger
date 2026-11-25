@@ -1,7 +1,7 @@
 """Core domain model.
 
 The model is deliberately small and framework-agnostic. Every ingester
-(JUnit, Cucumber, Allure, GitHub Actions, Jenkins, git) normalises its source into
+(JUnit, Cucumber, Allure, GitHub Actions, GitLab CI, Jenkins, git) normalises its source into
 ``TestRun`` / ``TestResult`` objects plus optional ``ChurnRecord`` entries.
 The ledger engine then books ``LedgerEntry`` rows against each ``TestAccount``.
 """
@@ -48,14 +48,16 @@ class TestResult(BaseModel):
 
 
 class TestRun(BaseModel):
-    """A single CI execution (one workflow run / Jenkins build / local run)."""
+    """A single CI execution (one workflow run / GitLab pipeline / Jenkins build / local run)."""
 
     run_id: str
     started_at: datetime
     commit_sha: str | None = None
     branch: str | None = None
     attempt: int = Field(default=1, description="1 = first execution; >1 means a rerun of the same SHA")
-    source: str = Field(default="junit", description="junit | cucumber | allure | github-actions | jenkins")
+    source: str = Field(
+        default="junit", description="junit | cucumber | allure | github-actions | gitlab | jenkins"
+    )
     results: list[TestResult] = Field(default_factory=list)
 
     @property

@@ -1,0 +1,6 @@
+{"test_suites": [{"name": "API", "test_cases": [
+{"name": "passes", "classname": "Shop", "status": "success", "execution_time": 1.25, "file": "tests/shop.py"},
+{"name": "fails", "classname": "Shop", "status": "failed", "system_output": "assertion failed"},
+{"name": "errors", "classname": "Shop", "status": "error"},
+{"name": "skips", "status": "skipped"}
+]}]}

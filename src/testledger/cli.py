@@ -146,6 +146,18 @@ def _load_ci_runs(cfg: Config, since: datetime) -> list[TestRun]:
             max_runs=int(gh.get("max_runs", 200)),
             artifact_name_contains=gh.get("artifact_name_contains", "test"),
         )
+    gl = cfg.sources.gitlab
+    if gl and gl.get("project"):
+        from testledger.ingest.gitlab import fetch_pipelines
+
+        console.print(f"Fetching GitLab pipelines for {gl['project']} …")
+        runs += fetch_pipelines(
+            gl.get("url", "https://gitlab.com"),
+            gl["project"],
+            since=since,
+            token_env=gl.get("token_env", "GITLAB_TOKEN"),
+            max_pipelines=int(gl.get("max_pipelines", 100)),
+        )
     jk = cfg.sources.jenkins
     if jk and jk.get("url") and jk.get("job"):
         from testledger.ingest.jenkins import fetch_builds
@@ -224,7 +236,7 @@ def analyze(
     mutation_report: Path | None = typer.Option(
         None, "--mutation", help="PIT XML / Stryker JSON / {file: score} JSON"
     ),
-    skip_ci: bool = typer.Option(False, "--skip-ci", help="Do not call GitHub/Jenkins APIs"),
+    skip_ci: bool = typer.Option(False, "--skip-ci", help="Do not call CI APIs"),
     skip_git: bool = typer.Option(False, "--skip-git", help="Do not run git for churn/fix analysis"),
     fail_on_quarantine: bool = typer.Option(
         False, "--fail-on-quarantine", help="Exit 2 if any test is quarantine-grade"
@@ -240,7 +252,7 @@ def analyze(
         runs += _load_ci_runs(cfg, since)
     if not runs:
         console.print(
-            "[red]No test runs found. Point --reports at JUnit/Cucumber output or configure sources.github / sources.jenkins.[/red]"
+            "[red]No test runs found. Point --reports at JUnit/Cucumber output or configure sources.github / sources.jenkins / sources.gitlab.[/red]"
         )
         raise typer.Exit(1)
 

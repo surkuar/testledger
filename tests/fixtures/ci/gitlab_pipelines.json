@@ -1,0 +1,49 @@
+[
+ {
+  "id": 11,
+  "sha": "abc123",
+  "ref": "main",
+  "source": "push",
+  "status": "failed",
+  "created_at": "2026-11-20T10:00:00Z"
+ },
+ {
+  "id": 12,
+  "sha": "abc123",
+  "ref": "main",
+  "source": "push",
+  "status": "success",
+  "started_at": "2026-11-20T11:00:00Z"
+ },
+ {
+  "id": 13,
+  "sha": "abc123",
+  "ref": "refs/merge-requests/4/head",
+  "source": "merge_request_event",
+  "status": "success",
+  "created_at": "2026-11-20T11:30:00Z"
+ },
+ {
+  "id": 14,
+  "sha": "abc123",
+  "ref": "main",
+  "source": "push",
+  "status": "running",
+  "created_at": "2026-11-20T12:00:00Z"
+ },
+ {
+  "id": 15,
+  "sha": "abc123",
+  "ref": "main",
+  "source": "push",
+  "status": "canceled",
+  "created_at": "2026-11-20T12:30:00Z"
+ },
+ {
+  "id": 16,
+  "sha": "abc123",
+  "ref": "main",
+  "source": "push",
+  "status": "success"
+ }
+]

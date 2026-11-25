@@ -77,6 +77,7 @@ When you use the GitHub Actions or Jenkins ingesters this metadata comes from th
 | Allure results (JUnit 5, TestNG, pytest, Playwright, …) | `sources.allure_globs` | one `allure-results/` folder = one run; retries (same `historyId`) = reruns |
 | Git history | `sources.git_repo` | maintenance churn on test files; fix-commit detection for value credit |
 | GitHub Actions | `sources.github` | run history + artifacts via REST API, `run_attempt` = rerun |
+| GitLab CI | `sources.gitlab` | finished pipelines' test reports (newest `max_pipelines`); same SHA + ref + source = rerun; job retries inside one pipeline and child pipelines are not seen; supports self-hosted URLs |
 | Jenkins | `sources.jenkins` | build history + `testReport` JSON; same SHA in consecutive builds = rerun |
 | Mutation reports | `--mutation` | PIT XML, Stryker JSON, or `{file: score}` JSON |
 
@@ -175,7 +176,8 @@ ruff check src tests
 ```
 
 ## Roadmap
-- [ ] GitLab CI and Azure DevOps ingesters
+- [x] GitLab CI ingester
+- [ ] Azure DevOps ingester
 - [ ] Code-ownership join (CODEOWNERS) so the memo is grouped by team
 - [x] Quarter-over-quarter diff (`testledger diff q3.json q4.json`)
 - [ ] Optional LLM narrative for the memo (opt-in, local or API)

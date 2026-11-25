@@ -41,7 +41,7 @@ An optional `risk_coverage_value_usd` lets you recognise a flat "safety net" val
 
 ## 4. Flake detection without instrumenting anything
 
-Most flake detectors need a plugin, a retry wrapper, or a vendor SaaS. TestLedger uses the one signal every CI system already produces: **the same commit was executed more than once.** If a test failed on attempt 1 and passed on attempt 2 of the same SHA, nothing changed but the weather — that is a flake, by definition. GitHub Actions exposes `run_attempt`; Jenkins exposes the built SHA per build; for local folders you encode the SHA and attempt in the directory name.
+Most flake detectors need a plugin, a retry wrapper, or a vendor SaaS. TestLedger uses the one signal every CI system already produces: **the same commit was executed more than once.** If a test failed on attempt 1 and passed on attempt 2 of the same SHA, nothing changed but the weather — that is a flake, by definition. GitHub Actions exposes `run_attempt`; GitLab CI is read from finished pipelines, where a later pipeline for the same SHA, ref and pipeline source counts as a rerun (branch and merge-request pipelines on one commit are not reruns of each other; pipelines without test results are ignored; job "Retry" inside a single pipeline and child/downstream pipelines are not seen, because the pipeline test report only holds the latest attempt of the pipeline's own jobs); Jenkins exposes the built SHA per build; for local folders you encode the SHA and attempt in the directory name.
 
 Flake rate is computed **per commit tested** (flaky commits ÷ first-attempt executions). Counting the reruns themselves in the denominator would dilute the very signal the reruns reveal: a test that fails on 4 of 10 commits is 40 % flaky, not 4 ÷ 14 = 29 %.
 

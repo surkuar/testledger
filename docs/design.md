@@ -20,7 +20,7 @@ Existing tools detect flaky tests or ask leaders to type guesses into an ROI cal
 | Goals | Non-goals (v1) |
 |---|---|
 | Framework-agnostic (JUnit, TestNG, Cucumber, pytest, Jest …) | Replacing a test-management system |
-| CI-agnostic (local folders, GitHub Actions, Jenkins) | Real-time dashboards (the JSON output feeds those) |
+| CI-agnostic (local folders, GitHub Actions, GitLab CI, Jenkins) | Real-time dashboards (the JSON output feeds those) |
 | Zero changes to test code or pipelines | Precise accounting — the model is *comparative*, not an invoice |
 | Platform-independent (Windows/macOS/Linux, Python ≥ 3.11) | Deep static analysis of test code |
 | Executive-readable output | Auto-deleting tests (humans decide; the tool recommends) |
@@ -35,6 +35,7 @@ flowchart TB
     C[Cucumber JSON]
     AL[Allure results]
     GH[GitHub Actions API]
+    GL[GitLab CI API]
     JK[Jenkins API]
     GIT[(git history)]
     SRC[Test source files]
@@ -55,7 +56,7 @@ flowchart TB
     LJ[ledger.json]
     PR[PR comment / job summary]
   end
-  J & C & AL & GH & JK --> ING
+  J & C & AL & GH & GL & JK --> ING
   GIT --> ING
   SRC & MUT --> AI
   ING --> ENG
@@ -78,6 +79,7 @@ src/testledger/
 │   ├── allure.py          allure-results/ folder → TestRun (+ one per retry round)
 │   ├── gitlog.py          git log → churn per test file, fix commits on product code
 │   ├── github_actions.py  REST client: runs → artifacts → zip → TestRun (with run_attempt)
+│   ├── gitlab.py          REST client: finished pipelines → test_report → TestRun (same sha + ref + source = rerun)
 │   └── jenkins.py         JSON API: builds → testReport → TestRun (same SHA = rerun)
 ├── ledger/
 │   └── engine.py          Books debits/credits per test, detects flakes, credits
@@ -169,7 +171,7 @@ flowchart TD
   LOC --> META{Folder name has<br/>date + sha + attempt?}
   META -- yes --> RUN1[TestRun with sha / attempt / date]
   META -- no --> RUN2[TestRun with mtime, no rerun detection]
-  CFG --> CI{sources.github /<br/>sources.jenkins set?}
+  CFG --> CI{sources.github /<br/>sources.gitlab /<br/>sources.jenkins set?}
   CI -- yes --> API[Fetch run history + reports via API]
   CI -- no --> SKIP1[skip]
   CFG --> GITQ{git_repo set and<br/>git available?}
@@ -192,7 +194,7 @@ flowchart TD
 
 ### 6.1 Flake detection (no framework changes needed)
 
-A flake is a **same-commit fail → pass transition**. CI systems rerun the same SHA (GitHub `run_attempt`, Jenkins "rebuild"); that rerun is the only ground truth that nothing changed.
+A flake is a **same-commit fail → pass transition**. CI systems rerun the same SHA (GitHub `run_attempt`, GitLab a later pipeline for the same SHA, ref and source, Jenkins "rebuild"); that rerun is the only ground truth that nothing changed.
 
 ```mermaid
 flowchart LR

@@ -99,6 +99,11 @@ class Sources(BaseModel):
         default=None,
         description="{'repo': 'owner/name', 'workflow': 'ci.yml', 'token_env': 'GITHUB_TOKEN', 'max_runs': 200}",
     )
+    gitlab: dict[str, Any] | None = Field(
+        default=None,
+        description="{'url': 'https://gitlab.com', 'project': 'group/project', "
+        "'token_env': 'GITLAB_TOKEN', 'max_pipelines': 100}",
+    )
     jenkins: dict[str, Any] | None = Field(
         default=None,
         description="{'url': 'https://ci.acme.com', 'job': 'acme-main', 'user_env': 'JENKINS_USER', 'token_env': 'JENKINS_TOKEN', 'max_builds': 100}",
