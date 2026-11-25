@@ -78,45 +78,56 @@ def _meta_from_path(p: Path) -> tuple[str | None, int, datetime | None]:
     return sha, attempt, ts
 
 
+def _glob_unique(root: Path, patterns: list[str]) -> list[str]:
+    """Matches for every pattern, each path once, in first-match order.
+
+    A file matched by two patterns (e.g. ``surefire-reports/TEST-Foo.xml`` by both
+    ``**/surefire-reports/*.xml`` and ``**/TEST-*.xml``) would otherwise be ingested
+    twice and double its runs and costs.
+    """
+    seen: dict[Path, str] = {}
+    for pattern in patterns:
+        for match in glob.glob(str(root / pattern), recursive=True):
+            seen.setdefault(Path(match).resolve(), match)
+    return list(seen.values())
+
+
 def _load_local_runs(cfg: Config, root: Path) -> list[TestRun]:
     runs: list[TestRun] = []
-    for pattern in cfg.sources.junit_globs:
-        for f in glob.glob(str(root / pattern), recursive=True):
-            sha, attempt, ts = _meta_from_path(Path(f))
-            try:
-                runs.append(
-                    parse_junit_xml(
-                        f, commit_sha=sha, attempt=attempt, started_at=ts, run_id=str(Path(f).parent.name)
-                    )
+    for f in _glob_unique(root, cfg.sources.junit_globs):
+        sha, attempt, ts = _meta_from_path(Path(f))
+        try:
+            runs.append(
+                parse_junit_xml(
+                    f, commit_sha=sha, attempt=attempt, started_at=ts, run_id=str(Path(f).parent.name)
                 )
-            except Exception as exc:  # noqa: BLE001
-                console.print(f"[yellow]skip {f}: {exc}[/yellow]")
-    for pattern in cfg.sources.cucumber_globs:
-        for f in glob.glob(str(root / pattern), recursive=True):
-            sha, attempt, ts = _meta_from_path(Path(f))
-            try:
-                runs.append(
-                    parse_cucumber_json(
-                        f, commit_sha=sha, attempt=attempt, started_at=ts, run_id=str(Path(f).parent.name)
-                    )
+            )
+        except Exception as exc:  # noqa: BLE001
+            console.print(f"[yellow]skip {f}: {exc}[/yellow]")
+    for f in _glob_unique(root, cfg.sources.cucumber_globs):
+        sha, attempt, ts = _meta_from_path(Path(f))
+        try:
+            runs.append(
+                parse_cucumber_json(
+                    f, commit_sha=sha, attempt=attempt, started_at=ts, run_id=str(Path(f).parent.name)
                 )
-            except Exception as exc:  # noqa: BLE001
-                console.print(f"[yellow]skip {f}: {exc}[/yellow]")
-    for pattern in cfg.sources.allure_globs:
-        for d in glob.glob(str(root / pattern), recursive=True):
-            folder = Path(d)
-            if not folder.is_dir():
-                continue
-            # _meta_from_path reads the parents of its argument, so pass a path inside the folder.
-            sha, attempt, ts = _meta_from_path(folder / "_")
-            try:
-                runs.extend(
-                    parse_allure_results(
-                        folder, commit_sha=sha, attempt=attempt, started_at=ts, run_id=folder.parent.name
-                    )
+            )
+        except Exception as exc:  # noqa: BLE001
+            console.print(f"[yellow]skip {f}: {exc}[/yellow]")
+    for d in _glob_unique(root, cfg.sources.allure_globs):
+        folder = Path(d)
+        if not folder.is_dir():
+            continue
+        # _meta_from_path reads the parents of its argument, so pass a path inside the folder.
+        sha, attempt, ts = _meta_from_path(folder / "_")
+        try:
+            runs.extend(
+                parse_allure_results(
+                    folder, commit_sha=sha, attempt=attempt, started_at=ts, run_id=folder.parent.name
                 )
-            except Exception as exc:  # noqa: BLE001
-                console.print(f"[yellow]skip {d}: {exc}[/yellow]")
+            )
+        except Exception as exc:  # noqa: BLE001
+            console.print(f"[yellow]skip {d}: {exc}[/yellow]")
     return runs
 
 

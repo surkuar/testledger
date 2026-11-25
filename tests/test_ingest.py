@@ -164,3 +164,32 @@ def test_cli_reads_allure_folders(tmp_path: Path, fixtures: Path):
     assert locked["regressions_caught"] == 0
     kinds = {e["kind"] for e in locked["entries"]}
     assert {"rerun_compute", "triage_time"} <= kinds
+
+
+def test_file_matched_by_two_globs_is_ingested_once(tmp_path: Path, fixtures: Path):
+    from testledger.cli import _load_local_runs
+
+    reports = tmp_path / "20260915-abc1234-attempt1" / "surefire-reports"
+    reports.mkdir(parents=True)
+    # Matches both **/surefire-reports/*.xml and **/TEST-*.xml from the defaults.
+    shutil.copy(fixtures / "junit/surefire.xml", reports / "TEST-Foo.xml")
+    cfg = Config()
+    assert {"**/surefire-reports/*.xml", "**/TEST-*.xml"} <= set(cfg.sources.junit_globs)
+    runs = _load_local_runs(cfg, tmp_path)
+    assert len(runs) == 1
+
+
+def test_overlapping_cucumber_globs_are_deduplicated(tmp_path: Path, fixtures: Path):
+    from testledger.cli import _load_local_runs
+
+    shutil.copy(fixtures / "cucumber/cucumber.json", tmp_path / "cucumber.json")
+    cfg = Config.model_validate(
+        {
+            "sources": {
+                "junit_globs": [],
+                "allure_globs": [],
+                "cucumber_globs": ["**/cucumber*.json", "*.json"],
+            }
+        }
+    )
+    assert len(_load_local_runs(cfg, tmp_path)) == 1
