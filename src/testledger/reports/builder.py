@@ -187,6 +187,7 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
     memo_html = env.get_template("memo.html.j2").render(**ctx, memo_md=memo_md)
 
     ledger_json = {
+        "schema_version": 1,
         "summary": summary,
         "assumptions": assumptions,
         "accounts": [

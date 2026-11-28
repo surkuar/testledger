@@ -38,6 +38,8 @@ from testledger.models import TestRun
 from testledger.reports import build_reports, write_reports
 from testledger.reports.diff import Snapshot, compare_ledgers, diff_markdown, diff_tables
 
+DASHBOARD_SCHEMA_VERSION = 1
+
 app = typer.Typer(
     add_completion=False, help="TestLedger — Test Estate Balance Sheet.", invoke_without_command=True
 )
@@ -320,6 +322,54 @@ def diff(
         if not rows:
             table.add_row("None")
         console.print(table)
+
+
+def _read_dashboard_ledger(path: Path) -> dict:
+    ledger_file = path / "ledger.json"
+    if not ledger_file.exists():
+        raise typer.BadParameter(f"{ledger_file} not found — run `testledger analyze` first.")
+    try:
+        data = json.loads(ledger_file.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise typer.BadParameter(f"Could not read {ledger_file}: {exc}") from exc
+    version = data.get("schema_version")
+    if version != DASHBOARD_SCHEMA_VERSION:
+        raise typer.BadParameter(
+            f"{ledger_file} has schema_version {version!r}; this dashboard only reads "
+            f"version {DASHBOARD_SCHEMA_VERSION}. Regenerate the ledger with this TestLedger."
+        )
+    return data
+
+
+@app.command()
+def dashboard(
+    out: Path = typer.Argument(Path("testledger-out"), help="Output folder from `analyze`"),
+    compare: Path | None = typer.Option(
+        None, "--compare", "-c", help="Older output folder; its ledger.json is compared against"
+    ),
+    filename: str = typer.Option("dashboard.html", "--filename", help="File name to write"),
+) -> None:
+    """Write a self-contained, offline dashboard.html from ledger.json."""
+    from jinja2 import Environment, PackageLoader, select_autoescape
+
+    data = _read_dashboard_ledger(out)
+    diff_json = "null"
+    if compare is not None:
+        _read_dashboard_ledger(compare)  # refuse unknown versions on both sides
+        report = compare_ledgers(Snapshot.read(compare / "ledger.json"), Snapshot.read(out / "ledger.json"))
+        diff_json = json.dumps(report).replace("</", "<\\/")
+    ledger_json = json.dumps(data).replace("</", "<\\/")
+    env = Environment(loader=PackageLoader("testledger", "templates"), autoescape=select_autoescape(["html"]))
+    html = env.get_template("dashboard.html.j2").render(
+        s=data["summary"],
+        schema_version=data["schema_version"],
+        ledger_json=ledger_json,
+        diff_json=diff_json,
+        compare_from=str(compare) if compare else None,
+    )
+    target = out / filename
+    target.write_text(html, encoding="utf-8")
+    console.print(f"Wrote [bold]{target}[/bold] — open it in any browser; it works offline.")
 
 
 @app.command()

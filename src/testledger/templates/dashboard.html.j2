@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TestLedger dashboard — {{ s.org }}</title>
+<style>
+  :root {
+    --ink:#1b1f24; --muted:#5b6470; --line:#e3e6ea; --bg:#fafbfc; --card:#ffffff;
+    --bar1:#2f6fb2; --bar2:#7fb2e5;
+    --asset-bg:#e3f4ea; --asset-ink:#1f7a4d;
+    --liab-bg:#fde8e6; --liab-ink:#b3261e;
+    --warn-bg:#fff4d6; --warn-ink:#8a5a00;
+    --hold-bg:#eef0f3; --hold-ink:#5b6470;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:#e6e9ed; --muted:#9aa3af; --line:#2d333b; --bg:#0d1117; --card:#161b22;
+      --bar1:#4c8ecf; --bar2:#2c5a86;
+      --asset-bg:#12341f; --asset-ink:#4cc38a;
+      --liab-bg:#3d1a17; --liab-ink:#f08080;
+      --warn-bg:#3a2f0e; --warn-ink:#e8b93f;
+      --hold-bg:#22272e; --hold-ink:#9aa3af;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         color:var(--ink); background:var(--bg); margin:0; }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 34px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .meta { color: var(--muted); font-size: 12.5px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .tiles { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
+  .tile { background: var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .tile .k { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .tile .v { font-size:21px; font-weight:600; margin-top:4px; font-variant-numeric: tabular-nums; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } }
+  svg text { fill: var(--ink); font-size: 11.5px; }
+  svg .lbl { fill: var(--muted); }
+  .legend { font-size:12px; color:var(--muted); margin:6px 0 0; }
+  .legend .sw { display:inline-block; width:12px; height:12px; border-radius:3px; margin:0 5px 0 14px; vertical-align:-1px; }
+  table { border-collapse: collapse; width:100%; font-size:13px; background:var(--card); }
+  th, td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; cursor:pointer; user-select:none; white-space:nowrap; }
+  th:hover { color:var(--ink); }
+  th .arrow { font-size:9px; }
+  td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+  .badge::before { content: attr(data-mark) " "; font-weight:700; }
+  .asset { background:var(--asset-bg); color:var(--asset-ink); }
+  .retire,.quarantine { background:var(--liab-bg); color:var(--liab-ink); }
+  .demote,.fix { background:var(--warn-bg); color:var(--warn-ink); }
+  .hold { background:var(--hold-bg); color:var(--hold-ink); }
+  tr.test-row { cursor:pointer; }
+  tr.test-row:hover td { background: var(--bg); }
+  tr.entries-row td { background: var(--bg); font-size:12.5px; }
+  .filters { display:flex; gap:10px; flex-wrap:wrap; margin: 0 0 10px; }
+  .filters input, .filters select { font: inherit; color:var(--ink); background:var(--card);
+    border:1px solid var(--line); border-radius:6px; padding:6px 9px; }
+  .filters input { flex:1; min-width: 200px; }
+  .debit { color: var(--liab-ink); } .credit { color: var(--asset-ink); }
+  .foot { color:var(--muted); font-size:12px; margin-top:30px; }
+  .empty { color: var(--muted); padding: 12px 4px; }
+</style>
+</head>
+<body><main>
+<h1>TestLedger dashboard — {{ s.org }}</h1>
+<div class="meta">Ledger generated {{ s.generated_at }} · window {{ s.window_days }} days ·
+  {{ s.runs_analysed }} runs · {{ s.tests }} tests · schema v{{ schema_version }}{% if compare_from %} · compared with {{ compare_from }}{% endif %}</div>
+
+<div class="tiles" id="tiles"></div>
+
+<div class="grid2" style="margin-top:16px">
+  <div class="card"><h2 style="margin-top:0">Cost by category</h2><div id="by-kind"></div></div>
+  <div class="card"><h2 style="margin-top:0">Cost and value by layer</h2><div id="by-layer"></div>
+    <div class="legend"><span class="sw" style="background:var(--bar1)"></span>cost (USD)
+      <span class="sw" style="background:var(--bar2)"></span>value (USD)</div></div>
+</div>
+
+<div id="changes"></div>
+
+<h2>Tests</h2>
+<div class="filters">
+  <input id="f-text" type="search" placeholder="Filter by test id or suite…" aria-label="Filter by test id or suite">
+  <select id="f-layer" aria-label="Filter by layer"><option value="">all layers</option></select>
+  <select id="f-verdict" aria-label="Filter by verdict"><option value="">all verdicts</option></select>
+</div>
+<div style="overflow-x:auto"><table id="tests" aria-label="Tests">
+  <thead><tr>
+    <th data-k="test_id">Test <span class="arrow"></span></th>
+    <th data-k="suite">Suite <span class="arrow"></span></th>
+    <th data-k="layer">Layer <span class="arrow"></span></th>
+    <th data-k="verdict">Verdict <span class="arrow"></span></th>
+    <th class="num" data-k="flake_rate">Flake <span class="arrow"></span></th>
+    <th class="num" data-k="avg_duration_s">Avg s <span class="arrow"></span></th>
+    <th class="num" data-k="cost_usd">Cost <span class="arrow"></span></th>
+    <th class="num" data-k="value_usd">Value <span class="arrow"></span></th>
+    <th class="num" data-k="net_usd">Net <span class="arrow"></span></th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
+</div>
+<div class="empty" id="empty" hidden>No tests match the filters.</div>
+
+<div class="foot">Generated by TestLedger · self-contained static page — works offline, sends nothing anywhere.</div>
+</main>
+
+<script type="application/json" id="ledger-data">{{ ledger_json }}</script>
+<script type="application/json" id="diff-data">{{ diff_json }}</script>
+<script>
+"use strict";
+const LEDGER = JSON.parse(document.getElementById("ledger-data").textContent);
+const DIFF = JSON.parse(document.getElementById("diff-data").textContent);
+const S = LEDGER.summary, ACCOUNTS = LEDGER.accounts;
+
+const money = n => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const money0 = n => "$" + Math.round(Number(n)).toLocaleString("en-US");
+const pct = n => Math.round(Number(n) * 100) + "%";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* Verdicts are never shown by colour alone: each badge carries a letter mark plus the word. */
+const MARKS = {quarantine: "!", retire: "✕", demote: "▼", fix: "🔧", asset: "★", hold: "●"};
+
+/* ---- summary tiles ---- */
+document.getElementById("tiles").innerHTML = [
+  ["Carrying cost", money0(S.total_cost_usd)],
+  ["Value delivered", money0(S.total_value_usd)],
+  ["Net", money0(S.net_usd)],
+  ["Portfolio ROI", S.portfolio_roi === null ? "n/a" : S.portfolio_roi],
+  ["Regressions caught", S.regressions_caught],
+  ["Tests", S.tests],
+].map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+/* ---- inline SVG bar charts (labels + values in text, so colour is never the only signal) ---- */
+function barChart(el, rows, series) {
+  const W = 460, ROW = series.length > 1 ? 34 : 24, H = 8;
+  const max = Math.max(1e-9, ...rows.flatMap(r => series.map(s => r[s.key])));
+  const labelW = 150, valW = 64, barW = W - labelW - valW - 8;
+  let y = 6, parts = [];
+  for (const r of rows) {
+    parts.push(`<text class="lbl" x="0" y="${y + H}">${esc(r.label)}</text>`);
+    let yy = y;
+    for (const s of series) {
+      const w = Math.max(0.5, (r[s.key] / max) * barW);
+      parts.push(`<rect x="${labelW}" y="${yy}" width="${w}" height="${H}" rx="2" fill="var(${s.color})"/>`);
+      parts.push(`<text x="${labelW + w + 4}" y="${yy + H - 1}">${money0(r[s.key])}</text>`);
+      yy += H + 3;
+    }
+    y += ROW;
+  }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${y + 4}" width="100%" role="img" aria-label="${esc(el.id)}">${parts.join("")}</svg>`;
+}
+
+/* cost by category from income-statement-style per-entry kinds */
+(function () {
+  const kinds = {};
+  for (const a of ACCOUNTS)
+    for (const e of a.entries)
+      if (["ci_compute", "rerun_compute", "triage_time", "maintenance"].includes(e.kind))
+        kinds[e.kind] = (kinds[e.kind] || 0) + e.amount_usd;
+  const rows = Object.entries(kinds)
+    .map(([k, v]) => ({label: k.replaceAll("_", " "), cost: v}))
+    .sort((a, b) => b.cost - a.cost);
+  barChart(document.getElementById("by-kind"), rows, [{key: "cost", color: "--bar1"}]);
+})();
+
+/* cost and value by layer */
+(function () {
+  const layers = {};
+  for (const a of ACCOUNTS) {
+    const b = (layers[a.layer] ||= {label: a.layer, cost: 0, value: 0});
+    b.cost += a.cost_usd; b.value += a.value_usd;
+  }
+  const rows = Object.values(layers).sort((a, b) => b.cost - a.cost);
+  barChart(document.getElementById("by-layer"), rows,
+    [{key: "cost", color: "--bar1"}, {key: "value", color: "--bar2"}]);
+})();
+
+/* ---- changes over time (when a second ledger.json was loaded) ---- */
+(function () {
+  if (!DIFF) return;
+  const row = (name, r) =>
+    `<tr><td>${esc(name)}</td><td class="num">${r.old ?? "n/a"}</td><td class="num">${r.new ?? "n/a"}</td>` +
+    `<td class="num">${r.delta === null || r.delta === undefined ? "n/a" : (r.delta > 0 ? "+" : "") + r.delta}</td></tr>`;
+  const portfolio = Object.entries(DIFF.portfolio).map(([k, r]) => row(k.replaceAll("_", " "), r)).join("");
+  const vc = DIFF.verdict_changes.map(c =>
+    `<tr><td><code>${esc(c.test_id)}</code></td><td>${esc(c.old)}</td><td>${esc(c.new)}</td></tr>`).join("");
+  const nc = DIFF.net_changes.map(c =>
+    `<tr><td><code>${esc(c.test_id)}</code></td><td class="num">${money(c.old)}</td>` +
+    `<td class="num">${money(c.new)}</td><td class="num">${c.delta > 0 ? "+" : ""}${money(c.delta)}</td></tr>`).join("");
+  document.getElementById("changes").innerHTML = `
+    <h2>Changes over time</h2>
+    ${DIFF.window_lengths_differ ? '<p class="empty">Window lengths differ between the two ledgers; compare costs with care.</p>' : ""}
+    <div class="grid2">
+      <div class="card"><table><thead><tr><th>Metric</th><th class="num">Previous</th><th class="num">Current</th><th class="num">Change</th></tr></thead><tbody>${portfolio}</tbody></table>
+        <p class="empty">${DIFF.added.length} test(s) added · ${DIFF.removed.length} removed</p></div>
+      <div class="card"><table><thead><tr><th>Verdict change</th><th>Was</th><th>Now</th></tr></thead>
+        <tbody>${vc || '<tr><td class="empty">No verdict changes</td></tr>'}</tbody></table></div>
+    </div>
+    <div class="card" style="margin-top:16px"><table><thead><tr><th>Largest net changes</th><th class="num">Was</th><th class="num">Now</th><th class="num">Δ</th></tr></thead>
+      <tbody>${nc || '<tr><td class="empty">No net changes</td></tr>'}</tbody></table></div>`;
+})();
+
+/* ---- sortable, filterable test table with per-test debit/credit entries ---- */
+const state = {key: "net_usd", dir: 1, text: "", layer: "", verdict: ""};
+const NUMERIC = new Set(["flake_rate", "avg_duration_s", "cost_usd", "value_usd", "net_usd"]);
+
+for (const id of ["f-layer", "f-verdict"]) {
+  const sel = document.getElementById(id);
+  const values = [...new Set(ACCOUNTS.map(a => id === "f-layer" ? a.layer : a.verdict))].sort();
+  sel.innerHTML += values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+}
+
+function badge(v) {
+  return `<span class="badge ${esc(v)}" data-mark="${MARKS[v] || ""}">${esc(v)}</span>`;
+}
+
+function entriesHtml(a) {
+  if (!a.entries.length) return '<span class="empty">No booked entries.</span>';
+  const rows = a.entries.map(e => {
+    const side = ["ci_compute", "rerun_compute", "triage_time", "maintenance"].includes(e.kind) ? "debit" : "credit";
+    return `<tr><td class="${side}">${side}</td><td>${esc(e.kind.replaceAll("_", " "))}</td>` +
+      `<td class="num">${money(e.amount_usd)}</td><td class="num">${e.quantity} ${esc(e.unit)}</td>` +
+      `<td>${esc(e.note || "")}</td></tr>`;
+  }).join("");
+  return `<table><thead><tr><th>Side</th><th>Kind</th><th class="num">Amount</th><th class="num">Quantity</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function render() {
+  const tb = document.querySelector("#tests tbody");
+  const rows = ACCOUNTS.filter(a =>
+    (!state.text || (a.test_id + " " + a.suite).toLowerCase().includes(state.text)) &&
+    (!state.layer || a.layer === state.layer) &&
+    (!state.verdict || a.verdict === state.verdict));
+  rows.sort((a, b) => {
+    const k = state.key, av = a[k], bv = b[k];
+    const cmp = NUMERIC.has(k)
+      ? (Number(av) - Number(bv))
+      : String(av).localeCompare(String(bv));
+    return cmp * state.dir;
+  });
+  document.getElementById("empty").hidden = rows.length > 0;
+  tb.innerHTML = rows.map((a, i) => `
+    <tr class="test-row" data-i="${i}" title="Click for debit/credit entries">
+      <td><code>${esc(a.test_id)}</code></td><td>${esc(a.suite)}</td><td>${esc(a.layer)}</td>
+      <td>${badge(a.verdict)}</td>
+      <td class="num">${pct(a.flake_rate)}</td><td class="num">${a.avg_duration_s}</td>
+      <td class="num">${money(a.cost_usd)}</td><td class="num">${money(a.value_usd)}</td>
+      <td class="num">${money(a.net_usd)}</td></tr>
+    <tr class="entries-row" hidden><td colspan="9">${entriesHtml(a)}</td></tr>`).join("");
+  tb.querySelectorAll("tr.test-row").forEach(tr =>
+    tr.addEventListener("click", () => { tr.nextElementSibling.hidden = !tr.nextElementSibling.hidden; }));
+}
+
+document.querySelectorAll("#tests th[data-k]").forEach(th =>
+  th.addEventListener("click", () => {
+    const k = th.dataset.k;
+    if (state.key === k) state.dir *= -1; else { state.key = k; state.dir = k === "test_id" || k === "suite" ? 1 : -1; }
+    document.querySelectorAll("#tests th .arrow").forEach(a => (a.textContent = ""));
+    th.querySelector(".arrow").textContent = state.dir === 1 ? "▲" : "▼";
+    render();
+  }));
+document.getElementById("f-text").addEventListener("input", e => { state.text = e.target.value.toLowerCase(); render(); });
+document.getElementById("f-layer").addEventListener("change", e => { state.layer = e.target.value; render(); });
+document.getElementById("f-verdict").addEventListener("change", e => { state.verdict = e.target.value; render(); });
+render();
+</script>
+</body></html>

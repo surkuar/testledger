@@ -180,7 +180,7 @@ ruff check src tests
 - [ ] Code-ownership join (CODEOWNERS) so the memo is grouped by team
 - [x] Quarter-over-quarter diff (`testledger diff q3.json q4.json`)
 - [ ] Optional LLM narrative for the memo (opt-in, local or API)
-- [ ] Web dashboard reading `ledger.json`
+- [x] Web dashboard reading `ledger.json` (`testledger dashboard`)
 
 ## License
 MIT © Suresh Babu. See [LICENSE](LICENSE).

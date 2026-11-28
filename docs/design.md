@@ -20,7 +20,7 @@ Existing tools detect flaky tests or ask leaders to type guesses into an ROI cal
 | Goals | Non-goals (v1) |
 |---|---|
 | Framework-agnostic (JUnit, TestNG, Cucumber, pytest, Jest …) | Replacing a test-management system |
-| CI-agnostic (local folders, GitHub Actions, Jenkins) | Real-time dashboards (the JSON output feeds those) |
+| CI-agnostic (local folders, GitHub Actions, Jenkins) | Real-time dashboards (the static `testledger dashboard` page and the JSON output feed those) |
 | Zero changes to test code or pipelines | Precise accounting — the model is *comparative*, not an invoice |
 | Platform-independent (Windows/macOS/Linux, Python ≥ 3.11) | Deep static analysis of test code |
 | Executive-readable output | Auto-deleting tests (humans decide; the tool recommends) |
@@ -68,7 +68,7 @@ flowchart TB
 
 ```
 src/testledger/
-├── cli.py                 Typer CLI: init · analyze · memo · pr-comment
+├── cli.py                 Typer CLI: init · analyze · memo · pr-comment · diff · dashboard
 ├── config.py              testledger.yml schema (pydantic) — rates, thresholds, sources
 ├── models.py              Domain model: TestRun, TestResult, ChurnRecord, FixCommit,
 │                          LedgerEntry, TestAccount, Ledger, Verdict
@@ -343,7 +343,7 @@ sequenceDiagram
 | Change the cost model | `ledger/engine.py → build_ledger` books entries; add an `EntryKind` |
 | Change verdict rules | `ledger/engine.py → _assign_verdicts`; thresholds in `config.Thresholds` |
 | Re-skin the memo | `templates/memo.*.j2` |
-| Feed a dashboard | Consume `ledger.json` (stable schema: `summary`, `assumptions`, `accounts[].entries[]`) |
+| Feed a dashboard | `testledger dashboard OUT_DIR` writes a self-contained `dashboard.html`; or consume `ledger.json` directly (stable schema: `schema_version`, `summary`, `assumptions`, `accounts[].entries[]`). Example render: [docs/dashboard.png](dashboard.png) |
 
 ## 13. Security and privacy
 
