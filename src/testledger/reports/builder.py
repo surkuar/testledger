@@ -66,7 +66,13 @@ def _acc_row(a: TestAccount) -> dict:
     }
 
 
-def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
+def build_reports(
+    ledger: Ledger,
+    cfg: Config,
+    *,
+    narrative: str | None = None,
+    narrative_model: str | None = None,
+) -> ReportBundle:
     accounts = list(ledger.accounts.values())
     assets = sorted((a for a in accounts if a.net > 0), key=lambda a: -a.net)
     liabilities = sorted((a for a in accounts if a.net < 0), key=lambda a: a.net)
@@ -177,6 +183,8 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
         "ai": ai_liabilities[:20],
         "notes": ledger.notes,
         "assumptions": assumptions,
+        "narrative": narrative,
+        "narrative_model": narrative_model,
         "Layer": Layer,
         "top_assets": balance_sheet["assets"][:10],
         "top_liabilities": balance_sheet["liabilities"][:10],

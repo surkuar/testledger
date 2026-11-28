@@ -2,6 +2,13 @@
 
 **Period:** last {{ s.window_days }} days · **Generated:** {{ s.generated_at }} · **Runs analysed:** {{ s.runs_analysed }} · **Tests on the books:** {{ s.tests }}
 
+{% if narrative %}
+> **In plain language — AI-generated summary (model: {{ narrative_model }}).** {{ narrative }}
+>
+> *This paragraph was written by an AI model from the figures in this memo. It only restates those figures; it is not an independent analysis.*
+
+{% endif %}
+
 ## 1. Bottom line
 
 | | USD |

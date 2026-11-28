@@ -82,7 +82,19 @@ AI assistants generate tests quickly, and those tests often pass because their a
 * **Shared files** spread maintenance cost evenly across the tests in them → split files by behaviour if you want precision.
 * **No history** (shallow clone) → churn and fixes are empty; use `fetch-depth: 0`.
 
-## 10. References
+## 10. Optional AI narrative — what is sent and why
+
+With `analyze --narrative` (off by default) the memo gains a short plain-language paragraph written by an LLM. The rules that keep this safe:
+
+* **What is sent:** the `summary.json` figures (totals, ROI, verdict counts, annualised savings), the top write-off rows (test id, verdict, flake rate, cost, value, action — at most `narrative.max_writeoffs`), and the assumptions (rates and thresholds). Nothing else.
+* **What is never sent:** test source code, failure messages or stack traces, repository content, file contents, tokens. The prompt is assembled from the report data only, and with the flag off no narrative code is imported and no request is made.
+* **Where it goes:** either a local OpenAI-compatible endpoint you run (default `http://localhost:11434/v1`, e.g. Ollama — data never leaves your machine) or the hosted OpenAI API. Model and endpoint come from the `narrative:` config block; the API key comes only from the environment variable named by `narrative.api_key_env` (default `OPENAI_API_KEY`) and is never written to any file.
+* **Traceability check:** the reply is rejected when it contains a dollar figure or percentage that is not in the input payload (ratios count in their ×100 percentage form, e.g. a flake rate of 0.35 allows "35%"). On rejection — or on any provider error — the memo silently falls back to the plain template with a warning on the console.
+* **Labelling:** the paragraph is marked as AI-generated and names the model, in both `memo.md` and `memo.html`.
+
+The narrative only restates figures a human can verify in the same memo; every number in it must trace back to an input, like every other number TestLedger prints.
+
+## 11. References
 
 * Cost of flaky tests in CI — industrial case study (TUM / ICST 2024): compiles cost factors from research and practice into a cost model.
 * Google and Microsoft reports of 4–16 % flaky tests and the shift from investigation to reruns.

@@ -229,6 +229,12 @@ def analyze(
     fail_on_quarantine: bool = typer.Option(
         False, "--fail-on-quarantine", help="Exit 2 if any test is quarantine-grade"
     ),
+    narrative: bool = typer.Option(
+        False,
+        "--narrative",
+        help="Add an AI-generated plain-language paragraph to the memo (off by default; "
+        "settings in the narrative: config block)",
+    ),
 ) -> None:
     """Ingest test results + git history, book the ledger, write reports."""
     cfg = _load_config(config)
@@ -256,6 +262,17 @@ def analyze(
 
     ledger = build_ledger(runs, cfg, churn=churn, fixes=fixes, ai_signals=ai_signals, now=now)
     bundle = build_reports(ledger, cfg)
+    if narrative:
+        # Lazy import: with the flag off nothing narrative-related is imported or sent anywhere.
+        from testledger.narrative import generate_narrative
+
+        try:
+            text = generate_narrative(cfg.narrative, bundle.summary, bundle.writeoffs, bundle.assumptions)
+        except Exception as exc:  # noqa: BLE001 — any failure falls back to the plain memo
+            console.print(f"[yellow]narrative skipped: {exc}[/yellow]")
+            text = None
+        if text:
+            bundle = build_reports(ledger, cfg, narrative=text, narrative_model=cfg.narrative.model)
     written = write_reports(bundle, out)
     _print_summary(bundle.summary)
     console.print(f"\nReports written to [bold]{out}[/bold]: " + ", ".join(written))

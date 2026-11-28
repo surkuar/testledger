@@ -153,6 +153,8 @@ thresholds:
   retire_min_cost_usd: 25
   ai_min_mutation_score: 0.5
   ai_min_assertion_density: 0.8
+# narrative:                        # optional, used only with `analyze --narrative`
+#   { provider: ollama, model: llama3.1, endpoint: "http://localhost:11434/v1", api_key_env: OPENAI_API_KEY }
 sources:
   junit_globs: ["**/surefire-reports/*.xml", "**/TEST-*.xml"]
   cucumber_globs: ["**/cucumber*.json"]
@@ -179,7 +181,7 @@ ruff check src tests
 - [ ] GitLab CI and Azure DevOps ingesters
 - [ ] Code-ownership join (CODEOWNERS) so the memo is grouped by team
 - [x] Quarter-over-quarter diff (`testledger diff q3.json q4.json`)
-- [ ] Optional LLM narrative for the memo (opt-in, local or API)
+- [x] Optional LLM narrative for the memo (opt-in via `analyze --narrative`, local or hosted API)
 - [ ] Web dashboard reading `ledger.json`
 
 ## License

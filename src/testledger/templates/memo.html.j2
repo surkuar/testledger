@@ -22,11 +22,18 @@
   .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11.5px; font-weight:600; }
   .retire,.quarantine { background:#fde8e6; color:var(--liab);} .demote,.fix { background:#fff4d6; color:#8a5a00;} .asset { background:#e3f4ea; color:var(--asset);} .hold { background:#eef0f3; color:var(--muted);}
   .foot { color:var(--muted); font-size:12.5px; margin-top:28px; }
+  .ai-note { border:1px dashed var(--muted); border-radius:8px; padding:12px 14px; font-size:13.5px; margin: 0 0 18px; }
+  .ai-note .tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
 </style>
 </head>
 <body><main>
 <h1>Quality Investment Memo — {{ s.org }}</h1>
 <div class="meta">Last {{ s.window_days }} days · generated {{ s.generated_at }} · {{ s.runs_analysed }} CI runs · {{ s.tests }} tests on the books</div>
+{% if narrative %}
+<div class="ai-note"><span class="tag">AI-generated summary · model: {{ narrative_model }}</span><br>
+{{ narrative }}<br>
+<span class="tag">Written by an AI model from the figures in this memo; it only restates them.</span></div>
+{% endif %}
 
 <div class="tiles">
   <div class="tile"><div class="k">Carrying cost</div><div class="v">${{ "%.0f"|format(s.total_cost_usd) }}</div></div>

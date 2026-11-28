@@ -74,6 +74,24 @@ class LayerRules(BaseModel):
     )
 
 
+class Narrative(BaseModel):
+    """Optional LLM-written memo paragraph. Used only with `analyze --narrative`."""
+
+    provider: str = Field(
+        default="ollama", description="'ollama' (any OpenAI-compatible endpoint) or 'openai'"
+    )
+    model: str = Field(default="llama3.1", description="Model name, echoed on the memo")
+    endpoint: str = Field(
+        default="http://localhost:11434/v1",
+        description="Base URL of the OpenAI-compatible endpoint (local provider)",
+    )
+    api_key_env: str = Field(
+        default="OPENAI_API_KEY", description="Env var holding the API key; never stored in files"
+    )
+    max_writeoffs: int = Field(default=10, description="Top write-off rows included in the prompt")
+    timeout_s: float = 60.0
+
+
 class Sources(BaseModel):
     junit_globs: list[str] = Field(
         default_factory=lambda: [
@@ -132,6 +150,7 @@ class Config(BaseModel):
     thresholds: Thresholds = Field(default_factory=Thresholds)
     layers: LayerRules = Field(default_factory=LayerRules)
     sources: Sources = Field(default_factory=Sources)
+    narrative: Narrative = Field(default_factory=Narrative)
     ai_generated_markers: list[str] = Field(
         default_factory=lambda: [
             "@ai-generated",
