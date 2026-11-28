@@ -166,6 +166,55 @@ def test_cli_reads_allure_folders(tmp_path: Path, fixtures: Path):
     assert {"rerun_compute", "triage_time"} <= kinds
 
 
+def test_parse_nunit3(fixtures):
+    run = parse_junit_xml(fixtures / "nunit/nunit3.xml", commit_sha="abc", attempt=2)
+    assert run.commit_sha == "abc" and run.attempt == 2
+    assert run.started_at == datetime(2026, 11, 20, 12, tzinfo=UTC)
+    assert [r.outcome for r in run.results] == [
+        Outcome.PASSED,
+        Outcome.FAILED,
+        Outcome.ERROR,
+        Outcome.SKIPPED,
+        Outcome.SKIPPED,
+        Outcome.SKIPPED,
+        Outcome.PASSED,  # Warning
+        Outcome.SKIPPED,  # Cancelled
+        Outcome.ERROR,  # Invalid
+        Outcome.PASSED,
+    ]
+    assert run.results[4].message == "not ready" and run.results[6].message == "slow"
+    assert run.results[-1].test_id == "Shop.Other.Saves"  # no fullname: classname.name, like JUnit
+    first, failed, *_ = run.results
+    assert first.file == "Shop/Tests.cs"
+    assert first.test_id == "Shop.Tests.pass(1)" and first.suite == "Shop.Tests"
+    assert first.duration_s == 0.25 and failed.message == "expected true"
+    override = datetime(2026, 11, 21, tzinfo=UTC)
+    assert parse_junit_xml(fixtures / "nunit/nunit3.xml", started_at=override).started_at == override
+
+
+def test_nunit2_is_rejected(tmp_path):
+    path = tmp_path / "TestResult.xml"
+    path.write_text("<test-results />", encoding="utf-8")
+    with pytest.raises(ValueError, match="NUnit 2 XML is unsupported"):
+        parse_junit_xml(path)
+
+
+@pytest.mark.parametrize("timestamp", ["", "not-a-date"])
+def test_nunit_timestamp_falls_back_to_mtime(tmp_path, timestamp):
+    path = tmp_path / "TestResult.xml"
+    path.write_text(f'<test-run start-time="{timestamp}" />', encoding="utf-8")
+    run = parse_junit_xml(path)
+    assert run.started_at == datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+
+
+def test_default_glob_finds_nunit_results(tmp_path, fixtures):
+    from testledger.cli import _load_local_runs
+
+    shutil.copy(fixtures / "nunit/nunit3.xml", tmp_path / "TestResult.xml")
+    [run] = _load_local_runs(Config(), tmp_path)
+    assert len(run.results) == 10
+
+
 def test_file_matched_by_two_globs_is_ingested_once(tmp_path: Path, fixtures: Path):
     from testledger.cli import _load_local_runs
 

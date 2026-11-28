@@ -77,6 +77,7 @@ When you use the GitHub Actions or Jenkins ingesters this metadata comes from th
 | Allure results (JUnit 5, TestNG, pytest, Playwright, …) | `sources.allure_globs` | one `allure-results/` folder = one run; retries (same `historyId`) = reruns |
 | Git history | `sources.git_repo` | maintenance churn on test files; fix-commit detection for value credit |
 | GitHub Actions | `sources.github` | run history + artifacts via REST API, `run_attempt` = rerun |
+| NUnit 3 XML | `sources.junit_globs` | `TestResult.xml`; NUnit 2 exports are rejected with an explicit error; NUnit has no source path, so `file` is approximated from the class namespace (`Shop.Tests` becomes `Shop/Tests.cs`) |
 | Jenkins | `sources.jenkins` | build history + `testReport` JSON; same SHA in consecutive builds = rerun |
 | Mutation reports | `--mutation` | PIT XML, Stryker JSON, or `{file: score}` JSON |
 

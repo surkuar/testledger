@@ -76,7 +76,12 @@ class LayerRules(BaseModel):
 
 class Sources(BaseModel):
     junit_globs: list[str] = Field(
-        default_factory=lambda: ["**/surefire-reports/*.xml", "**/junit*.xml", "**/TEST-*.xml"]
+        default_factory=lambda: [
+            "**/surefire-reports/*.xml",
+            "**/junit*.xml",
+            "**/TEST-*.xml",
+            "**/TestResult.xml",
+        ]
     )
     cucumber_globs: list[str] = Field(default_factory=lambda: ["**/cucumber*.json"])
     allure_globs: list[str] = Field(

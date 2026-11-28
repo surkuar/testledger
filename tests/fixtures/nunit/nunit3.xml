@@ -1,0 +1,12 @@
+<test-run start-time="2026-11-20T12:00:00Z"><test-suite>
+<test-case fullname="Shop.Tests.pass(1)" classname="Shop.Tests" name="pass(1)" result="Passed" duration="0.25" />
+<test-case fullname="Shop.Tests.fail" classname="Shop.Tests" name="fail" result="Failed" duration="1.5"><failure><message>expected true</message></failure></test-case>
+<test-case fullname="Shop.Tests.error" classname="Shop.Tests" name="error" result="Failed" label="Error"><failure><message>connection failed</message></failure></test-case>
+<test-case fullname="Shop.Tests.skip" classname="Shop.Tests" name="skip" result="Skipped" />
+<test-case fullname="Shop.Tests.ignore" classname="Shop.Tests" name="ignore" result="Skipped" label="Ignored"><reason><message>not ready</message></reason></test-case>
+<test-case fullname="Shop.Tests.unknown" classname="Shop.Tests" name="unknown" result="Inconclusive" />
+<test-case fullname="Shop.Tests.warn" classname="Shop.Tests" name="warn" result="Warning"><reason><message>slow</message></reason></test-case>
+<test-case fullname="Shop.Tests.cancelled" classname="Shop.Tests" name="cancelled" result="Failed" label="Cancelled"><failure><message>run aborted</message></failure></test-case>
+<test-case fullname="Shop.Tests.invalid" classname="Shop.Tests" name="invalid" result="Failed" label="Invalid"><failure><message>no source</message></failure></test-case>
+<test-case classname="Shop.Other" name="Saves" result="Passed" />
+</test-suite></test-run>

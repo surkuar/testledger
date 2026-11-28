@@ -2,6 +2,7 @@
 
 Handles the common dialects:
 * ``<testsuites><testsuite><testcase/>`` (Surefire, Gradle, pytest, Jest)
+* NUnit 3 ``<test-run>`` root (NUnit 2 is rejected explicitly)
 * bare ``<testsuite>`` root
 * TestNG's ``testng-results.xml`` (``<test-method>`` elements)
 
@@ -36,6 +37,13 @@ def _testng_outcome(method: ET.Element) -> tuple[Outcome, str | None]:
     return Outcome.PASSED, None
 
 
+def _nunit_file(classname: str) -> str | None:
+    """NUnit results carry no source path. Approximate one from the class's namespace (C# convention)."""
+    if not classname or classname == "UnknownClass":
+        return None
+    return classname.split("+")[0].replace(".", "/") + ".cs"
+
+
 def parse_junit_xml(
     path: str | Path,
     *,
@@ -50,7 +58,42 @@ def parse_junit_xml(
     root = tree.getroot()
     results: list[TestResult] = []
 
-    if root.tag == "testng-results":
+    if root.tag == "test-results":
+        raise ValueError("NUnit 2 XML is unsupported; export NUnit 3 TestResult.xml instead")
+    if root.tag == "test-run":
+        statuses = {
+            "Passed": Outcome.PASSED,
+            "Warning": Outcome.PASSED,  # passed, but emitted Assert.Warn / Warn.If
+            "Failed": Outcome.FAILED,
+            "Skipped": Outcome.SKIPPED,
+            "Inconclusive": Outcome.SKIPPED,
+        }
+        for case in root.iter("test-case"):
+            name = case.get("name", "unnamed")
+            status = case.get("result", "Inconclusive")
+            outcome = statuses.get(status, Outcome.SKIPPED)
+            if status == "Failed":
+                label = case.get("label")
+                if label == "Error":
+                    outcome = Outcome.ERROR
+                elif label == "Cancelled":  # the run was aborted: the test never really ran
+                    outcome = Outcome.SKIPPED
+                elif label == "Invalid":  # NotRunnable (bad signature, missing TestCaseSource, ...)
+                    outcome = Outcome.ERROR
+            classname = case.get("classname", "UnknownClass")
+            message = case.findtext("failure/message") or case.findtext("reason/message")
+            results.append(
+                TestResult(
+                    test_id=case.get("fullname") or f"{classname}.{name}",
+                    name=name,
+                    suite=classname,
+                    file=_nunit_file(classname),
+                    outcome=outcome,
+                    duration_s=float(case.get("duration") or 0.0),
+                    message=message.strip()[:300] if message else None,
+                )
+            )
+    elif root.tag == "testng-results":
         for cls in root.iter("class"):
             cls_name = cls.get("name", "UnknownClass")
             for method in cls.iter("test-method"):
@@ -92,7 +135,9 @@ def parse_junit_xml(
     ts = started_at
     if ts is None:
         first_suite = root.find("testsuite")
-        raw = root.get("timestamp") or (first_suite.get("timestamp") if first_suite is not None else None)
+        raw = (root.get("start-time") if root.tag == "test-run" else root.get("timestamp")) or (
+            first_suite.get("timestamp") if first_suite is not None else None
+        )
         try:
             ts = datetime.fromisoformat(raw) if raw else None
         except ValueError:
