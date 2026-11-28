@@ -48,6 +48,8 @@ def _acc_row(a: TestAccount) -> dict:
     return {
         "test_id": a.test_id,
         "suite": a.suite,
+        "file": a.file,
+        "owners": a.owners,
         "layer": a.layer.value,
         "executions": a.executions,
         "failures": a.failures,
@@ -77,6 +79,9 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
     by_suite: dict[str, dict] = defaultdict(
         lambda: {"tests": 0, "cost_usd": 0.0, "value_usd": 0.0, "regressions": 0}
     )
+    by_owner: dict[str, dict] = defaultdict(
+        lambda: {"tests": 0, "cost_usd": 0.0, "value_usd": 0.0, "regressions": 0}
+    )
     by_kind: dict[str, float] = defaultdict(float)
     verdict_counts: dict[str, int] = defaultdict(int)
     for a in accounts:
@@ -85,9 +90,19 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
             bucket["cost_usd"] = round(bucket["cost_usd"] + a.total_cost, 2)
             bucket["value_usd"] = round(bucket["value_usd"] + a.total_value, 2)
             bucket["regressions"] += a.regressions_caught
+        for owner in a.owners or ["(unowned)"]:
+            bucket = by_owner[owner]
+            bucket["tests"] += 1
+            bucket["cost_usd"] = round(bucket["cost_usd"] + a.total_cost, 2)
+            bucket["value_usd"] = round(bucket["value_usd"] + a.total_value, 2)
+            bucket["regressions"] += a.regressions_caught
         for e in a.entries:
             by_kind[e.kind.value] = round(by_kind[e.kind.value] + e.amount_usd, 2)
         verdict_counts[a.verdict.value] += 1
+
+    # Team grouping is only meaningful when at least one test has an owner.
+    if not any(a.owners for a in accounts):
+        by_owner.clear()
 
     writeoffs = [
         _acc_row(a)
@@ -141,6 +156,7 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
         "liabilities": [_acc_row(a) for a in liabilities[:50]],
         "by_layer": dict(by_layer),
         "by_suite": dict(sorted(by_suite.items(), key=lambda kv: kv[1]["cost_usd"], reverse=True)[:25]),
+        "by_owner": dict(sorted(by_owner.items(), key=lambda kv: kv[1]["cost_usd"], reverse=True)),
     }
     income_statement = {
         "costs": {
@@ -177,6 +193,7 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
         "ai": ai_liabilities[:20],
         "notes": ledger.notes,
         "assumptions": assumptions,
+        "by_owner": balance_sheet["by_owner"],
         "Layer": Layer,
         "top_assets": balance_sheet["assets"][:10],
         "top_liabilities": balance_sheet["liabilities"][:10],

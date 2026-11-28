@@ -129,6 +129,9 @@ class TestAccount(BaseModel):
     name: str
     suite: str = ""
     file: str | None = None
+    owners: list[str] = Field(
+        default_factory=list, description="CODEOWNERS entries for the test's file; empty when unowned"
+    )
     layer: Layer = Layer.UNKNOWN
     executions: int = 0
     failures: int = 0

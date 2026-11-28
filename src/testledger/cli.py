@@ -254,7 +254,18 @@ def analyze(
         if mutation_report:
             attach_mutation_scores(ai_signals, load_mutation_report(mutation_report))
 
-    ledger = build_ledger(runs, cfg, churn=churn, fixes=fixes, ai_signals=ai_signals, now=now)
+    codeowners = None
+    if cfg.sources.codeowners is not None:
+        from testledger.ingest.codeowners import CodeOwners
+
+        co_path = None if cfg.sources.codeowners == "auto" else cfg.sources.codeowners
+        codeowners = CodeOwners.load(Path(repo or "."), co_path)
+        if codeowners is not None:
+            console.print("Grouping costs by team from CODEOWNERS.")
+
+    ledger = build_ledger(
+        runs, cfg, churn=churn, fixes=fixes, ai_signals=ai_signals, codeowners=codeowners, now=now
+    )
     bundle = build_reports(ledger, cfg)
     written = write_reports(bundle, out)
     _print_summary(bundle.summary)

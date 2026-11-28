@@ -17,7 +17,7 @@ Most tooling in this space stops at "which tests are flaky". TestLedger answers 
 | Artefact | Audience | What it says |
 |---|---|---|
 | `memo.md` / `memo.html` | VP Eng, CFO, Director of QE | Bottom line, reallocation recommendation, where the money goes, top liabilities/assets, assumptions |
-| `balance_sheet.json` | QE leads | Assets vs. liabilities per test, by pyramid layer, by suite |
+| `balance_sheet.json` | QE leads | Assets vs. liabilities per test, by pyramid layer, by suite, by team (CODEOWNERS) |
 | `income_statement.json` | Finance / QE leads | Cost by category (CI, reruns, triage, maintenance) vs. value delivered |
 | `writeoffs.json` | Team leads | The action list: **retire / demote / fix / quarantine**, each with a reason |
 | `ai_liabilities.json` | QE governance | AI-generated tests that fail mutation-score or assertion-density thresholds ("test theater") |
@@ -155,6 +155,7 @@ thresholds:
   ai_min_assertion_density: 0.8
 sources:
   junit_globs: ["**/surefire-reports/*.xml", "**/TEST-*.xml"]
+  codeowners: auto                  # group the memo by team from CODEOWNERS; a path, or null to disable
   cucumber_globs: ["**/cucumber*.json"]
   git_repo: "."
   github: { repo: "acme/shop", workflow: "ci.yml", token_env: "GITHUB_TOKEN", max_runs: 200 }
@@ -177,7 +178,7 @@ ruff check src tests
 
 ## Roadmap
 - [ ] GitLab CI and Azure DevOps ingesters
-- [ ] Code-ownership join (CODEOWNERS) so the memo is grouped by team
+- [x] Code-ownership join (CODEOWNERS) so the memo is grouped by team
 - [x] Quarter-over-quarter diff (`testledger diff q3.json q4.json`)
 - [ ] Optional LLM narrative for the memo (opt-in, local or API)
 - [ ] Web dashboard reading `ledger.json`

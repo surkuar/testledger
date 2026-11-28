@@ -37,6 +37,13 @@
 {% for layer, b in bs.by_layer.items() -%}
 | {{ layer }} | {{ b.tests }} | {{ "%.2f"|format(b.cost_usd) }} | {{ "%.2f"|format(b.value_usd) }} | {{ b.regressions }} |
 {% endfor %}
+{% if by_owner %}
+| By team | Tests | Cost | Value | Regressions |
+|---|---:|---:|---:|---:|
+{% for owner, b in by_owner.items() -%}
+| {{ owner }} | {{ b.tests }} | {{ "%.2f"|format(b.cost_usd) }} | {{ "%.2f"|format(b.value_usd) }} | {{ b.regressions }} |
+{% endfor %}
+{% endif %}
 
 ## 4. Top liabilities (act on these first)
 

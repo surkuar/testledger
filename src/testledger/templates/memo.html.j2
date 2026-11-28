@@ -52,6 +52,11 @@
 <table><tr><th>Layer</th><th class="num">Tests</th><th class="num">Cost</th><th class="num">Value</th><th class="num">Regressions</th></tr>
 {% for layer, b in bs.by_layer.items() %}<tr><td>{{ layer }}</td><td class="num">{{ b.tests }}</td><td class="num">{{ "%.2f"|format(b.cost_usd) }}</td><td class="num">{{ "%.2f"|format(b.value_usd) }}</td><td class="num">{{ b.regressions }}</td></tr>{% endfor %}
 </table>
+{% if by_owner %}
+<table><tr><th>Team</th><th class="num">Tests</th><th class="num">Cost</th><th class="num">Value</th><th class="num">Regressions</th></tr>
+{% for owner, b in by_owner.items() %}<tr><td>{{ owner }}</td><td class="num">{{ b.tests }}</td><td class="num">{{ "%.2f"|format(b.cost_usd) }}</td><td class="num">{{ "%.2f"|format(b.value_usd) }}</td><td class="num">{{ b.regressions }}</td></tr>{% endfor %}
+</table>
+{% endif %}
 
 <h2>Write-off list</h2>
 <table><tr><th>Test</th><th>Layer</th><th class="num">Flake</th><th class="num">Avg s</th><th class="num">Cost</th><th class="num">Value</th><th>Verdict</th><th>Action</th></tr>

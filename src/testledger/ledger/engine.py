@@ -43,6 +43,7 @@ from datetime import UTC, datetime, timedelta
 from statistics import median
 
 from testledger.config import Config
+from testledger.ingest.codeowners import CodeOwners
 from testledger.models import (
     ChurnRecord,
     EntryKind,
@@ -148,6 +149,7 @@ def build_ledger(
     churn: dict[str, ChurnRecord] | None = None,
     fixes: list[FixCommit] | None = None,
     ai_signals: dict[str, dict] | None = None,
+    codeowners: CodeOwners | None = None,
     now: datetime | None = None,
 ) -> Ledger:
     churn = churn or {}
@@ -270,6 +272,8 @@ def build_ledger(
                     unit="window",
                 )
             )
+        if codeowners is not None and acc.file:
+            acc.owners = codeowners.owners_for(acc.file)
         sig = ai_signals.get(test_id) or (ai_signals.get(acc.file) if acc.file else None)
         if sig:
             acc.ai_generated = bool(sig.get("ai_generated", False))

@@ -100,6 +100,11 @@ class Sources(BaseModel):
         description="Regexes (case-insensitive, '/' separators) identifying test files; a path matching "
         "any one is a test. Drives maintenance churn and which files fix commits ignore",
     )
+    codeowners: str | None = Field(
+        default="auto",
+        description="Path to a CODEOWNERS file (relative to git_repo), 'auto' to look in "
+        ".github/, the repo root and docs/ (GitHub's order), or null to disable team grouping",
+    )
     github: dict[str, Any] | None = Field(
         default=None,
         description="{'repo': 'owner/name', 'workflow': 'ci.yml', 'token_env': 'GITHUB_TOKEN', 'max_runs': 200}",
