@@ -58,6 +58,26 @@ def test_reports_render_and_write(tmp_path: Path, cfg: Config):
     assert len(data["accounts"]) == 2 and all("entries" in a for a in data["accounts"])
 
 
+def test_html_memo_escapes_report_data(cfg: Config):
+    # Test ids and the org name come from reports and config, so they must never render as markup.
+    hostile = "com.acme.ui.Checkout<script>alert(1)</script>Test.flow"
+    # Flaky on every commit, so it is quarantine-grade and listed in the memo.
+    runs = []
+    for i in range(1, 9):
+        runs += [
+            make_run(f"r{i}", f"sha{i}", 1, i, {hostile: F}, duration=60),
+            make_run(f"r{i}b", f"sha{i}", 2, i, {hostile: P}, duration=60),
+        ]
+    cfg = cfg.model_copy(update={"org_name": "Acme <b>&</b> Co"})
+    bundle = build_reports(build_ledger(runs, cfg, now=NOW), cfg)
+    assert hostile in bundle.memo_markdown  # the test is listed in the memo
+    assert "<script>" not in bundle.memo_html
+    assert "Checkout&lt;script&gt;alert(1)&lt;/script&gt;Test" in bundle.memo_html
+    assert "Acme &lt;b&gt;&amp;&lt;/b&gt; Co" in bundle.memo_html
+    # Markdown is not HTML-escaped: it keeps the text as written.
+    assert "Acme <b>&</b> Co" in bundle.memo_markdown
+
+
 def test_meta_from_path_conventions():
     sha, attempt, ts = _meta_from_path(Path("ci/20260915T1030-066b939951-attempt2/TEST-x.xml"))
     assert sha == "066b939951" and attempt == 2 and ts.isoformat() == "2026-09-15T10:30:00+00:00"

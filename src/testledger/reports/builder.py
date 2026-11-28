@@ -168,7 +168,9 @@ def build_reports(ledger: Ledger, cfg: Config) -> ReportBundle:
     }
     assumptions = cfg.rates.model_dump() | {"thresholds": cfg.thresholds.model_dump()}
 
-    env = Environment(loader=PackageLoader("testledger", "templates"), autoescape=select_autoescape(["html"]))
+    env = Environment(
+        loader=PackageLoader("testledger", "templates"), autoescape=select_autoescape(["html", "html.j2"])
+    )
     ctx = {
         "s": summary,
         "bs": balance_sheet,
