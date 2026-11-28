@@ -1,0 +1,21 @@
+{
+  "count": 3,
+  "value": [
+    {
+      "automatedTestName": "Shop.Tests.CartTest.adds_item",
+      "outcome": "Failed",
+      "durationInMs": 1500,
+      "errorMessage": "Expected 2 but was 1"
+    },
+    {
+      "automatedTestName": "Shop.Tests.CartTest.empties",
+      "outcome": "Passed",
+      "durationInMs": 250
+    },
+    {
+      "automatedTestName": "Shop.Tests.CartTest.guest_checkout",
+      "outcome": "NotExecuted",
+      "durationInMs": 0
+    }
+  ]
+}

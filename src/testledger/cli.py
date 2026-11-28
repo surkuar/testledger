@@ -159,6 +159,19 @@ def _load_ci_runs(cfg: Config, since: datetime) -> list[TestRun]:
             token_env=jk.get("token_env", "JENKINS_TOKEN"),
             max_builds=int(jk.get("max_builds", 100)),
         )
+    az = cfg.sources.azure_devops
+    if az and az.get("org_url") and az.get("project"):
+        from testledger.ingest.azure_devops import fetch_builds as fetch_azdo_builds
+
+        console.print(f"Fetching Azure DevOps builds for {az['project']} …")
+        runs += fetch_azdo_builds(
+            az["org_url"],
+            az["project"],
+            since=since,
+            token_env=az.get("token_env", "AZURE_DEVOPS_TOKEN"),
+            definition=az.get("definition"),
+            max_builds=int(az.get("max_builds", 100)),
+        )
     return runs
 
 

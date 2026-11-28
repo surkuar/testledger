@@ -79,6 +79,7 @@ When you use the GitHub Actions or Jenkins ingesters this metadata comes from th
 | GitHub Actions | `sources.github` | run history + artifacts via REST API, `run_attempt` = rerun |
 | NUnit 3 XML | `sources.junit_globs` | `TestResult.xml`; NUnit 2 exports are rejected with an explicit error; NUnit has no source path, so `file` is approximated from the class namespace (`Shop.Tests` becomes `Shop/Tests.cs`) |
 | Jenkins | `sources.jenkins` | build history + `testReport` JSON; same SHA in consecutive builds = rerun |
+| Azure DevOps Pipelines | `sources.azure_devops` | builds + test runs via REST API (`api-version=7.1`); repeated test runs on one build or SHA = reruns |
 | Mutation reports | `--mutation` | PIT XML, Stryker JSON, or `{file: score}` JSON |
 
 ## How it works (short version)
@@ -159,6 +160,7 @@ sources:
   git_repo: "."
   github: { repo: "acme/shop", workflow: "ci.yml", token_env: "GITHUB_TOKEN", max_runs: 200 }
   jenkins: { url: "https://ci.acme.com", job: "shop/main", user_env: "JENKINS_USER", token_env: "JENKINS_TOKEN" }
+  azure_devops: { org_url: "https://dev.azure.com/acme", project: "shop", definition: 12, token_env: "AZURE_DEVOPS_TOKEN" }
 ```
 
 ## Why this exists
@@ -176,7 +178,8 @@ ruff check src tests
 ```
 
 ## Roadmap
-- [ ] GitLab CI and Azure DevOps ingesters
+- [ ] GitLab CI ingester
+- [x] Azure DevOps ingester
 - [ ] Code-ownership join (CODEOWNERS) so the memo is grouped by team
 - [x] Quarter-over-quarter diff (`testledger diff q3.json q4.json`)
 - [ ] Optional LLM narrative for the memo (opt-in, local or API)

@@ -1,0 +1,8 @@
+{
+  "count": 3,
+  "value": [
+    {"automatedTestName": "Shop.Tests.CartTest.adds_item", "outcome": "Passed", "durationInMs": 1200},
+    {"automatedTestName": "Shop.Tests.CartTest.empties", "outcome": "Passed", "durationInMs": 240},
+    {"automatedTestName": "Shop.Tests.CartTest.guest_checkout", "outcome": "Passed", "durationInMs": 3100}
+  ]
+}

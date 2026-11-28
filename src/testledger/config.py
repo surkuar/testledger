@@ -108,6 +108,10 @@ class Sources(BaseModel):
         default=None,
         description="{'url': 'https://ci.acme.com', 'job': 'acme-main', 'user_env': 'JENKINS_USER', 'token_env': 'JENKINS_TOKEN', 'max_builds': 100}",
     )
+    azure_devops: dict[str, Any] | None = Field(
+        default=None,
+        description="{'org_url': 'https://dev.azure.com/acme', 'project': 'shop', 'definition': 12, 'token_env': 'AZURE_DEVOPS_TOKEN', 'max_builds': 100}",
+    )
 
     @field_validator("fix_commit_pattern")
     @classmethod

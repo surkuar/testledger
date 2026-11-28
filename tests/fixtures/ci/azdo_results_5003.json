@@ -1,0 +1,6 @@
+{
+  "count": 1,
+  "value": [
+    {"automatedTestName": "Shop.Tests.CartTest.adds_item", "outcome": "Passed", "durationInMs": 1100}
+  ]
+}
